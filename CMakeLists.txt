@@ -18,8 +18,10 @@ file(GLOB_RECURSE SOURCE_FILES
 )
 list(FILTER SOURCE_FILES EXCLUDE REGEX "build/")
 # 将文件添加到可执行文件中  
-target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})  
+target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES}) 
 
+# 打印SOURCE_FILES
+message("SOURCE_FILES: ${SOURCE_FILES}")
 
 #input your vcpkg path
 set(CMAKE_PREFIX_PATH "/home/cyq/vcpkg/packages")
