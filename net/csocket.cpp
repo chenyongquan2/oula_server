@@ -16,6 +16,9 @@
 #include <sys/epoll.h>
 #include <error.h>
 
+#include "../threadpool/threadpool.h"
+#include "../logic/logic.h"
+
 using namespace std;
 
 bool Socket::run()
@@ -137,6 +140,7 @@ bool Socket::run()
                     //判断是否为listen fd
                     if(epollEvents[i].data.fd == listenFd)
                     {
+                        static size_t clientNo =0;
                         sockaddr_in clientAddr;
                         socklen_t clientAddrLen = sizeof(clientAddr);
                         int clientFd = accept(listenFd, (struct sockaddr *)&clientAddr, &clientAddrLen);
@@ -146,11 +150,13 @@ bool Socket::run()
                             return false;
                         }
 
+                        clientNo++;
+
                         //客户端连接上了!
                         char clientIP[INET_ADDRSTRLEN];
                         inet_ntop(AF_INET, &(clientAddr.sin_addr), clientIP, sizeof(clientIP));
                         int clientPort=ntohs(clientAddr.sin_port);
-                        std::cout << "Accepted connection from " << clientIP << ":" << clientPort << std::endl;  
+                        std::cout << "Accepted clientNo:" << clientNo << ", connection from " << clientIP << ":" << clientPort << std::endl;  
 
                         //设置clientFd为非阻塞
                         int flags = fcntl(clientFd, F_GETFL,0);
@@ -178,7 +184,7 @@ bool Socket::run()
                     {
                         //为client的可读事件
                         int curClientFd = epollEvents[i].data.fd;
-                        std::cout << "client fd: " << curClientFd << " recv data." << std::endl;
+                        //std::cout << "client fd: " << curClientFd << " recv data." << std::endl;
                         char buf[32]={0};
                         int sz=recv(curClientFd,buf,sizeof(buf),0);
                         if(sz==0)
@@ -218,8 +224,13 @@ bool Socket::run()
                         else
                         {
                             //正常收到数据
-                            std::cout << "recv from client:" << curClientFd << buf << std::endl;
-                        
+                            //std::cout << "recv from client:" << curClientFd << buf << std::endl;
+
+                            //交由消费者(线程池)去消费
+                            auto pThreadPool = ThreadPool::GetInstance();
+
+                            string param(buf);
+                            pThreadPool->addTask(&Logic::Exec, param);
                         }
                         
                     }
