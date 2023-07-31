@@ -1,5 +1,5 @@
-//#ifndef NET_SOCKET_H
-//#define NET_SOCKET_H
+#ifndef NET_SOCKET_H
+#define NET_SOCKET_H
 
 class Socket
 {
@@ -8,6 +8,6 @@ public:
 
 };
 
-//#endif // end NET_SOCKET_H
+#endif // end NET_SOCKET_H
 
 
