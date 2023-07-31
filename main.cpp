@@ -30,7 +30,6 @@ int testThreadpool() {
   
     // 等待所有任务完成  
     std::this_thread::sleep_for(std::chrono::seconds(1));  
-  
     return 0;  
 } 
 
@@ -41,12 +40,12 @@ int main()
 {
     //启动线程池
     ThreadPool::GetInstance();
-    ThreadPool::GetInstance();
-    ThreadPool::GetInstance();
+    
 
-    testThreadpool();
-    //Socket mySocket;
-    //mySocket.run();
+    //testThreadpool();
+    
+    Socket mySocket;
+    mySocket.run();
 
     return 0;
 }
