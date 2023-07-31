@@ -3,6 +3,20 @@
 #include <functional>
 #include <mutex>
 
+ThreadPool* ThreadPool::GetInstance()
+{
+    //这里用饿汉式 所以不用加锁。
+    if(!m_pInstance)
+    {
+        static size_t ThreadNum = 4;
+        m_pInstance = new ThreadPool(ThreadNum);
+        //利用静态变量成员的生命周期跟随着程序生命周期的特点，
+        //在程序结束时，此类ThreadPoolMemGuard会调用析构函数，这时候把单例对象ThreadPool给进行析构
+        static ThreadPoolMemGuard guard;
+    }
+    return m_pInstance;
+}
+
 ThreadPool::ThreadPool(size_t threadNum)
     :m_bStop(false)
 {
@@ -10,10 +24,12 @@ ThreadPool::ThreadPool(size_t threadNum)
     {
         m_threads.emplace_back(&ThreadPool::threadFunc, this);
     }
+    std::cout <<"create ThreadPool, init " << threadNum << " threads" << std::endl;
 }
 
 ThreadPool::~ThreadPool()
 {
+    std::cout <<"~ThreadPool() start" << std::endl;
     m_bStop.store(true, std::memory_order_seq_cst);
     m_cond.notify_all();//通知线程把手头的活给收尾了
     for(auto& t:m_threads)
@@ -23,6 +39,7 @@ ThreadPool::~ThreadPool()
             t.join();
         }
     }
+    std::cout <<"~ThreadPool() end" << std::endl;
 
 }
 

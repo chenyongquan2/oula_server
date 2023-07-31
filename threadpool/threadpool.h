@@ -10,15 +10,14 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <memory>
 
 class ThreadPool
 {
 public:
-    ThreadPool(size_t threadNum);
     ~ThreadPool();
-
-    //线程入口函数
-    void threadFunc();
+    static ThreadPool* GetInstance();
+    
 
     template<typename Func, typename... Args>
     void addTask(Func && f, Args&&... args)
@@ -35,6 +34,28 @@ public:
     }
 
 private:
+    //构造函数为私有
+    ThreadPool(size_t threadNum);
+
+    //线程入口函数
+    void threadFunc();
+
+private:
+    //内部类，用于管理ThreadPool此单例类的内存释放
+    class ThreadPoolMemGuard
+    {
+    public:
+        ~ThreadPoolMemGuard()
+        {
+            if(ThreadPool::m_pInstance)
+            {
+                delete ThreadPool::m_pInstance;
+                ThreadPool::m_pInstance = nullptr;
+            }
+        }
+    };
+
+    static ThreadPool* m_pInstance;
     std::vector<std::thread> m_threads;
     std::queue<std::function<void()>> m_taskQueue;
     std::mutex m_mutex;

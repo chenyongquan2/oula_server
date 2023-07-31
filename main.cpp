@@ -19,23 +19,31 @@ int func2(int num1, int num2)
 }
   
 int testThreadpool() {  
-    ThreadPool pool(4);  
+    auto pThreadPool = ThreadPool::GetInstance();
   
     for (int i = 0; i < 8; ++i) {  
-        pool.addTask(printHello, i);  
+        pThreadPool->addTask(printHello, i);  
     }  
     for (int i = 0; i < 8; ++i) {  
-        pool.addTask(func2, i, i*2);  
+        pThreadPool->addTask(func2, i, i*2);  
     }
   
     // 等待所有任务完成  
     std::this_thread::sleep_for(std::chrono::seconds(1));  
   
     return 0;  
-}  
+} 
+
+//全局变量和静态变量的初始化。
+ThreadPool* ThreadPool::m_pInstance = nullptr;
 
 int main()
 {
+    //启动线程池
+    ThreadPool::GetInstance();
+    ThreadPool::GetInstance();
+    ThreadPool::GetInstance();
+
     testThreadpool();
     //Socket mySocket;
     //mySocket.run();
