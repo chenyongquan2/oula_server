@@ -17,14 +17,18 @@ public:
     ThreadPool(size_t threadNum);
     ~ThreadPool();
 
+    //线程入口函数
+    void threadFunc();
+
     template<typename Func, typename... Args>
     void addTask(Func && f, Args&&... args)
     {
         std::unique_lock<std::mutex> lock(m_mutex);
+        //这里对调用的函数封装了一层，使线程task调用可以支持任意类型参数，任意返回值的function形式。
         m_taskQueue.emplace(
-            [=] {
+            [=]() {
+                //f(std::forward<Args>(args)...);
                 f(args...);
-                //f(std::forward(args...));
             }
         );
         m_cond.notify_one();
