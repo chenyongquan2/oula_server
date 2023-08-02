@@ -18,7 +18,7 @@ public:
     ~ThreadPool();
     static ThreadPool* GetInstance();
     
-
+    //这里运用了类型擦除的技巧。
     template<typename Func, typename... Args>
     void addTask(Func && f, Args&&... args)
     {
@@ -27,7 +27,9 @@ public:
         m_taskQueue.emplace(
             [=]() {
                 //f(std::forward<Args>(args)...);
-                f(args...);
+                //f(args...);
+                //另外一种写法。
+                std::invoke(f,args...);
             }
         );
         m_cond.notify_one();
