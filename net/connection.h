@@ -1,100 +1,90 @@
 #ifndef NET_CONNECTION_H
 #define NET_CONNECTION_H
 
+
+#include "channel.h"
+#include "sockethelper.h"
+
 #include <memory>
 #include <iostream>  
 #include <tuple>  
 #include <utility>
 #include <functional>
 
-class Socket;
-class Connection;
-typedef void(Socket::*EventCallbackType)(Connection*);
+class EventLoop;
+class TcpConnection;
 
-class Connection
+typedef void (*EventCallbackType)(EventLoop*, TcpConnection*);
+
+//Connection层，每个客户端连接代表一个Connection对象，用于记录该路连接的各种状态
+//常见的状态信息有，如连接状态、数据收发缓冲区信息、数据流量记录状态、本端和对端地址和端口号信息等，
+//同时也提供对各种网络事件的处理接口，
+//这些接口或被本层自己使用，或被 Session 层使用。Connection 持有一个 Channel 对象，且掌管着 Channel 对象的生命周期。
+
+
+class TcpConnection
 {
 public:
-    Connection(int socketFd)
-        :m_socketFd(socketFd)
-    {
-    }
-    virtual ~Connection(){}
+    TcpConnection(int socketFd, EventLoop *pEventLoop);
+    virtual ~TcpConnection();
+
     int GetSockFd();
+    void handleReadEvent();
 
 public:
     EventCallbackType m_readEventCallbackFunc;//读事件处理回调
     EventCallbackType m_writeEventCallbackFunc;//写事件处理回调
 
 private:
+    EventLoop *m_pEventLoop;
     int m_socketFd;
-    /*
-    template <typename Callable, typename... Args>
-    void setReadEventCallback(Callable&& callable, Args&&... args)
-    {
-        // m_readCallback = new impl<Callable, Args...>
-        //     (std::forward<Callable>(callable), std::forward<Args>(args)...);  
-        m_readCallback = std::make_unique< impl<Callable, Args...> >
-            (std::forward<Callable>(callable), std::forward<Args>(args)...);
-    }
-
-    template <typename Callable, typename... Args>
-    void setWriteEventCallback(Callable&& callable, Args&&... args)
-    {
-        // m_writeCallback = new impl<Callable, Args...>
-        //     (std::forward<Callable>(callable), std::forward<Args>(args)...);  
-        m_writeCallback = std::make_unique< impl<Callable, Args...> >
-            (std::forward<Callable>(callable), std::forward<Args>(args)...);
-    }
-private:
-    //使用类型擦除
-    struct impl_base {
-        virtual void invoke() = 0;
-        virtual ~impl_base() {}  
-    };
-    // 具体可调用对象类型的实现类  
-    template <typename Callable, typename... Args>
-    struct impl: impl_base
-    {
-        Callable callable_;
-        std::tuple<Args...> args_;
-
-        impl(Callable&& callable, Args&&... args)
-            :callable_(std::forward(callable))
-            ,args_(std::forward(args)...)
-        {}
-
-        void invoke() override
-        {
-            // std::invoke 是用来调用可调用对象本身，可以处理不同类型的可调用对象，包括普通函数、成员函数、函数指针和函数对象。
-            // std::apply 是用来将参数以元组的形式传递给可调用对象，并执行调用。它主要用于需要将参数以元组方式传递的情况，以简化代码的书写。
-            // 可以说，std::apply 是 std::invoke 的一个补充，用于处理需要将参数以元组方式传递的情况。
-            // 它们都提供了一种通用的方式来执行不同类型的函数调用，增强了代码的可读性和灵活性。
-            
-            //std::invoke(callable_, args_);
-            std::apply(callable_, args_);
-        }
-    };
-
-    //读事件处理函数
-    std::unique_ptr<impl_base> m_readCallback;
-    //写事件处理函数
-    std::unique_ptr<impl_base> m_writeCallback;
-    */
+    std::shared_ptr<Channel> m_spChannel;
+    //Todo：本端和对端的地址信息， 接受缓冲区 发送缓冲区 流量统计等信息
 
 };
 
-class ListenConnection: public Connection
+class ListenConnection: public TcpConnection
 {
 public:
-    ListenConnection(int socketFd);
+    ListenConnection(int socketFd, EventLoop *pEventLoop);
     virtual ~ListenConnection() {}
 };
 
-class ClientConnection: public Connection
+class ClientConnection: public TcpConnection
 {
 public:
-    ClientConnection(int socketFd);
+    ClientConnection(int socketFd, EventLoop *pEventLoop);
     virtual ~ClientConnection() {}
+};
+
+//方便使用依赖注入的设计模式，这里抽象出来一个interface
+class TcpConnectionMgrInterface
+{
+public:
+    virtual ~TcpConnectionMgrInterface() {}
+    //外部只需要以sockfd为ket就通过TcpConnectionMgr去找到对应的conn，而无需直接和具体的conn去打交道。
+    virtual void AddListenConn(int sockFd) = 0;
+    virtual void AddClientConn(int sockFd) = 0;
+    virtual void RemoveConn(int sockFd) = 0;
+    virtual bool HasConn(int sockFd) = 0;
+    virtual void HandleRead(int sockFd) = 0;
+};
+
+//连接池
+class TcpConnectionMgr: public TcpConnectionMgrInterface
+{
+public:
+    virtual ~TcpConnectionMgr();
+    TcpConnectionMgr(EventLoop *pEventLoop);
+    virtual void AddListenConn(int sockFd) override;
+    virtual void AddClientConn(int sockFd) override;
+    virtual void RemoveConn(int sockFd) override;
+    virtual bool HasConn(int sockFd) override;
+    virtual void HandleRead(int sockFd) override;
+    
+private:
+    EventLoop* m_pEventLoop;
+    std::unordered_map<int, std::shared_ptr<TcpConnection>> m_connMap;
 };
 
 #endif // end NET_CONNECTION_H

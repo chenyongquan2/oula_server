@@ -2,7 +2,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <iostream>
-#include "net/csocket.h"
+#include "net/eventloop.h"
 #include "threadpool/threadpool.h"
 
 using namespace std;
@@ -38,14 +38,12 @@ ThreadPool* ThreadPool::m_pInstance = nullptr;
 
 int main()
 {
-    //启动线程池
+    //懒汉式启动线程池
     ThreadPool::GetInstance();
-    
-
     //testThreadpool();
     
-    Socket mySocket;
-    mySocket.run();
+    EventLoop eventLoop;
+    eventLoop.processEventLoop();
 
     return 0;
 }

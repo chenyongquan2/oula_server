@@ -1,4 +1,9 @@
-#include "csocket.h"
+#include "sockethelper.h"
+#include "eventloop.h"
+#include "connection.h"
+#include "../threadpool/threadpool.h"
+#include "../logic/logic.h"
+
 #include <asm-generic/errno-base.h>
 #include <asm-generic/errno.h>
 #include <asm-generic/socket.h>
@@ -18,58 +23,21 @@
 #include <sys/epoll.h>
 #include <error.h>
 
-#include "../threadpool/threadpool.h"
-#include "../logic/logic.h"
-#include "connection.h"
-
-using namespace std;
-
-constexpr int epollFdMax = 1024;
-constexpr int port = 3000;
-
-Socket::Socket()
-    :m_epollFd(-1)
-{
-    Init();
-}
-
-Socket::~Socket()
+namespace SocketHelper 
 {
 
-}
-
-void Socket::Init()
+bool InitListenSocket(EventLoop* pEventLoop)
 {
-    InitEpoll();
-    InitListenSocket();
-}
-
-bool Socket::InitEpoll()
-{
-    //创建epoll，把listenfd给添加到epoll，等待其可读事件
-    m_epollFd = epoll_create(epollFdMax);//Todo:先随便写个值。这个值是不是没啥用了?
-    if (m_epollFd == -1)
-    {
-        std::cout << "create epollFd error." << std::endl;
-        return false;
-    }
-    return true;
-}
-
-bool Socket::InitListenSocket()
-{
+    constexpr int port = 3000;
     int ret = -1;
     //创建listen socket
+    //Todo:后续socket的生命周期感觉得统一交给chanel层来管理
     int listenFd = socket(AF_INET, SOCK_STREAM, 0);
     if(listenFd == -1)
     {
-        cout << "create listen socket error." << std::endl;
+        std::cout << "create listen socket error." << std::endl;
         return false;
     }
-
-    //创建listen connection
-    Connection* spListenConn = new ListenConnection(listenFd);
-    //std::shared_ptr<Connection> spListenConn = std::make_unique<ListenConnection>(listenFd);
 
     //设置为非阻塞
     int flags = fcntl(listenFd, F_GETFL,0);
@@ -119,38 +87,41 @@ bool Socket::InitListenSocket()
         return false;
     }
 
+    //创建conn
+    pEventLoop->GetConnectionMgr()->AddListenConn(listenFd);
+
     epoll_event epollEvent;
     epollEvent.data.fd = listenFd;
     epollEvent.events = EPOLLIN;
     //epollEvent.events |= EPOLLET;//et模式
-    epollEvent.data.ptr = spListenConn;//方便epoll触发事件驱动时，去拿到对应的conn
+    //epollEvent.data.ptr = spListenConn;//方便epoll触发事件驱动时，去拿到对应的conn
 
-    ret = epoll_ctl(m_epollFd, EPOLL_CTL_ADD, listenFd, &epollEvent);
+    ret = epoll_ctl(pEventLoop->GetEpollFd(), EPOLL_CTL_ADD, listenFd, &epollEvent);
     if(ret==-1)
     {
         std::cout << "epoll_ctl error" << std::endl;
         return false;
     }
-    m_listenFd = listenFd;
+
     return true;
 }
 
-void Socket::AcceptCallBack(Connection* conn)
+void AcceptConn(EventLoop* pEventLoop, TcpConnection* pListenConn)
 {
     int ret = -1;
     static size_t clientNo =0;
     sockaddr_in clientAddr;
     socklen_t clientAddrLen = sizeof(clientAddr);
-    int clientFd = accept(conn->GetSockFd(), (struct sockaddr *)&clientAddr, &clientAddrLen);
+    //Todo:后续socket的生命周期感觉得统一交给chanel层来管理
+    int clientFd = accept(pListenConn->GetSockFd(), (struct sockaddr *)&clientAddr, &clientAddrLen);
     if(clientFd ==-1)
     {
         std::cout << "accept error" << std::endl;
         return;
     }
 
-    clientNo++;
-
     //客户端连接上了!
+    clientNo++;
     char clientIP[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(clientAddr.sin_addr), clientIP, sizeof(clientIP));
     int clientPort=ntohs(clientAddr.sin_port);
@@ -166,29 +137,29 @@ void Socket::AcceptCallBack(Connection* conn)
         return;
     }
 
-    //创建client connection
-    Connection* spClientConn = new ClientConnection(clientFd);
-    //std::shared_ptr<Connection> spListenConn = std::make_unique<ListenConnection>(listenFd);
+    //创建conn
+    pEventLoop->GetConnectionMgr()->AddClientConn(clientFd);
 
     //把client给添加到epoll
     epoll_event clientFdEpollEvent;
     clientFdEpollEvent.data.fd = clientFd;
     clientFdEpollEvent.events = EPOLLIN;
     //clientFdEpollEvent.events |= EPOLLET;//开启et
-    clientFdEpollEvent.data.ptr= spClientConn;
+    //clientFdEpollEvent.data.ptr= spClientConn;
 
-    ret=epoll_ctl(m_epollFd, EPOLL_CTL_ADD, clientFd, &clientFdEpollEvent);
+    ret = epoll_ctl(pEventLoop->GetEpollFd(), EPOLL_CTL_ADD, clientFd, &clientFdEpollEvent);
     if(ret == -1)
     {
         std::cout << "new client accepted,clientfd: " << clientFd << std::endl;
         return;
     }
 }
-void Socket::ClientReadCallBack(Connection* conn)
+
+void ClientReadCallBack(EventLoop* pEventLoop, TcpConnection* pClientConn)
 {
     int ret = -1;
     //为client的可读事件
-    int curClientFd = conn->GetSockFd();
+    int curClientFd = pClientConn->GetSockFd();
     //std::cout << "client fd: " << curClientFd << " recv data." << std::endl;
     char buf[32]={0};
     int sz=recv(curClientFd,buf,sizeof(buf),0);
@@ -196,7 +167,7 @@ void Socket::ClientReadCallBack(Connection* conn)
     {
         //说明对端关闭了连接
         //将client从epoll中移除事件
-        ret=epoll_ctl(m_epollFd, EPOLL_CTL_DEL, curClientFd, nullptr);
+        ret=epoll_ctl(pEventLoop->GetEpollFd(), EPOLL_CTL_DEL, curClientFd, nullptr);
         if(ret==-1)
         {
             std::cout << "EPOLL_CTL_DEL clientfd fail:" << curClientFd << std::endl;
@@ -217,7 +188,7 @@ void Socket::ClientReadCallBack(Connection* conn)
         else
         {
             //将client从epoll中移除事件
-            ret=epoll_ctl(m_epollFd, EPOLL_CTL_DEL, curClientFd, nullptr);
+            ret=epoll_ctl(pEventLoop->GetEpollFd(), EPOLL_CTL_DEL, curClientFd, nullptr);
             if(ret==-1)
             {
                 std::cout << "EPOLL_CTL_DEL clientfd fail:" << curClientFd << std::endl;
@@ -233,64 +204,15 @@ void Socket::ClientReadCallBack(Connection* conn)
 
         //交由消费者(线程池)去消费
         auto pThreadPool = ThreadPool::GetInstance();
-
-        string param(buf);
+        std::string param(buf);
         pThreadPool->addTask(&Logic::Exec, param);
     }
 }
 
-bool Socket::run()
+void CloseSocket(int sockFd)
 {
-    int ret=0;
-
-    //按照refactor模式
-    while(true)
-    {
-        
-        int timeout = -1;//暂时先无限等待下去
-        //epollEvents是个出参，会把有事件的结果给放到这里。
-        int epollEventCnt = epoll_wait(m_epollFd, m_epollEvents, NGX_MAX_EVENTS, timeout);
-        if(epollEventCnt < 0)
-        {
-            if(errno==EINTR)
-            {
-                //被信号中断
-                continue;
-            }
-            else
-            {
-                //出错
-                std::cout << "epoll_wait error:" << errno << std::endl;
-                break;
-            }
-        }
-        else if(epollEventCnt == 0)
-        {
-            //超时了
-            continue;
-        }
-        else
-        {
-            for(auto i=0;i<epollEventCnt;i++)
-            {
-                Connection *pConn = (Connection *)m_epollEvents[i].data.ptr;
-                if(m_epollEvents[i].events & EPOLLIN)
-                {
-                    EventCallbackType pFunc = pConn->m_readEventCallbackFunc;
-                    (this->*pFunc)(pConn);
-                }
-                else if(m_epollEvents[i].events & EPOLLOUT)
-                {
-                    // TODO 暂不处理
-                }
-                
-            }
-        }
-
-    }
-
-    close(m_listenFd);
-    return true;
+    //Todo:后续socket的生命周期感觉得统一交给chanel层来管理
+    close(sockFd);
 }
 
-
+};
