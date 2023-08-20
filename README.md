@@ -1,4 +1,4 @@
-A high-performance server framework
+A server framework
 
 sub modules info:
     test
