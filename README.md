@@ -1,4 +1,4 @@
-A server framework
+A server framework library with refactor model.
 
 sub modules info:
     test
