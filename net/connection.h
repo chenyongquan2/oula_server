@@ -2,7 +2,7 @@
 #define NET_CONNECTION_H
 
 
-#include "channel.h"
+#include "Channel.h"
 #include "sockethelper.h"
 
 #include <memory>

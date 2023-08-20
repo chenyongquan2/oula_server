@@ -1,7 +1,9 @@
 #ifndef NET_SOCKET_H
 #define NET_SOCKET_H
 
+#include "Channel.h"
 #include <sys/epoll.h>
+#include <functional>
 #include <memory>
 
 #define NGX_MAX_EVENTS 512
@@ -9,16 +11,28 @@
 class TcpConnection;
 class TcpConnectionMgrInterface;
 
+class Poller;
+
 class EventLoop
 {
 public:
+    typedef std::function<void()> Functor;
+public:
     EventLoop();
+    EventLoop(const EventLoop&) = delete;
+    EventLoop& operator=(const EventLoop) = delete;
     ~EventLoop();
-    void Init();
 
-    TcpConnectionMgrInterface* GetConnectionMgr() const;
-    int GetEpollFd() const;
-    bool processEventLoop();
+    void loop();
+    void runInLoop(Functor cb);
+    
+    
+private:
+    bool quit_;
+    std::unique_ptr<Poller> poller_;
+
+    typedef std::vector<Channel*> ChannelList;
+    ChannelList activeChanels_;
 
 private:
     bool InitEpoll();

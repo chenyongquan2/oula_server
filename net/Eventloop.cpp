@@ -1,4 +1,4 @@
-#include "eventloop.h"
+#include "Eventloop.h"
 #include "connection.h"
 #include "sockethelper.h"
 
@@ -20,15 +20,39 @@
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <error.h>
+#include "Poller.h"
+
+const int kPollTimeMs = 10000;
 
 EventLoop::EventLoop()
     :m_epollFd(-1)
+    ,quit_(false)
 {
     Init();
 }
 
 EventLoop::~EventLoop()
 {
+
+}
+
+void EventLoop::loop()
+{
+
+}
+void EventLoop::runInLoop(Functor cb)
+{
+    std::cout<<"EventLoop start"<<std::endl;
+    while(!quit_)
+    {
+        activeChanels_.clear();
+        poller_->poll(kPollTimeMs,&activeChanels_);
+
+        for(auto channel:activeChanels_)
+        {
+            channel->HandleEvent();
+        }
+    }
 
 }
 
