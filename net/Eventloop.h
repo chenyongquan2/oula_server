@@ -25,7 +25,14 @@ public:
 
     void loop();
     void runInLoop(Functor cb);
-    
+
+    //管理channel相关
+    void updateChannel(Channel *);
+    void removeChannel(Channel *);
+    bool HasChannel(Channel *);
+
+private:
+    void init();
     
 private:
     bool quit_;
@@ -33,16 +40,6 @@ private:
 
     typedef std::vector<Channel*> ChannelList;
     ChannelList activeChanels_;
-
-private:
-    bool InitEpoll();
-    void InitConnMgr();
-    bool InitListenSocket();
-
-private:
-    std::shared_ptr<TcpConnectionMgrInterface> m_spTcpConnectionMgr;
-    int m_epollFd;
-    epoll_event m_epollEvents[NGX_MAX_EVENTS];
 };
 
 #endif // end NET_SOCKET_H

@@ -19,3 +19,13 @@ Poller::~Poller()
 
 }
 
+bool Poller::HasChannel(Channel* channel)
+{
+    auto it = channels_.find(channel->GetSocketFd());
+    if(it == channels_.end())
+    {
+        return false;
+    }
+    return it->second == channel;
+}
+

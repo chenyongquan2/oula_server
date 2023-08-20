@@ -18,9 +18,11 @@ public:
 
     virtual void poll(int timeoutMs, ChannelList* activeChannels) =0;
 
-    virtual void AddChannel(Channel*) = 0;
+    virtual void updateChannel(Channel*) = 0;
     virtual void RemoveChannel(Channel*) = 0;
-    virtual bool HasChannel(Channel*) = 0;
+
+
+    bool HasChannel(Channel*);
 
 protected:
     //key为socket Fd
