@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <iostream>
 #include "net/Eventloop.h"
+#include "net/TcpServer.h"
 #include "threadpool/threadpool.h"
 
 using namespace std;
@@ -39,11 +40,14 @@ ThreadPool* ThreadPool::m_pInstance = nullptr;
 int main()
 {
     //懒汉式启动线程池
-    ThreadPool::GetInstance();
+    //ThreadPool::GetInstance();
     //testThreadpool();
     
     EventLoop eventLoop;
-    eventLoop.processEventLoop();
+    TcpServer tcpServer(&eventLoop);
+    tcpServer.start();
+    eventLoop.loop();
+    
 
     return 0;
 }

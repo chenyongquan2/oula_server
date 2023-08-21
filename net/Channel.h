@@ -12,7 +12,7 @@ class Channel
 public:
     typedef std::function<void()> EventCallback;
 public:
-    Channel(int fd, EventLoop* pEventLoop);
+    Channel(EventLoop* pEventLoop, int fd);
 	~Channel();
 
     int GetSocketFd();
@@ -51,7 +51,6 @@ private:
 
 private:
     const int m_socketFd;
-
     uint32_t m_curEvents;//监听的事件
     uint32_t m_recvEnents;//接受到的事件
 

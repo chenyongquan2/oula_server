@@ -72,7 +72,7 @@ void EpollPoller::updateOperator2Poller(int operation, Channel*channel)
 {
     struct epoll_event event;
     //Todo:复习一下这个函数写法
-    memset(&events_, 0, sizeof(event));
+    memset(&event, 0, sizeof(event));
     event.data.ptr=channel;
     event.events=channel->GetAllEvents();//感兴趣的事件。
 

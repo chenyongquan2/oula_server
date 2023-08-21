@@ -1,6 +1,9 @@
 #include "Channel.h"
+
 #include <poll.h>
 #include <sys/poll.h>
+
+#include "Eventloop.h"
 
 //POLLPRT它表示有一个或多个高优先级的带外（out-of-band）数据可供读取
 // 在网络编程中，常常使用POLLPRI来检测带外数据的到达。带外数据是指在TCP连接中的紧急数据，它具有高优先级，需要被立即处理。通过使用POLLPRI标志位，可以确保程序能够及时响应带外数据的到达。
@@ -10,9 +13,9 @@ constexpr int KReadEvent = POLLIN | POLLPRI;
 constexpr int KWriteEvent = POLLOUT;
 constexpr int KNoneEvent = 0;
 
-Channel::Channel(int fd, EventLoop* pEventLoop)
-    : m_socketFd(fd)
-    , eventloop_(pEventLoop)
+Channel::Channel(EventLoop* pEventLoop, int fd)
+    : eventloop_(pEventLoop)
+    , m_socketFd(fd)
     , events_(KNoneEvent)
 {
 
@@ -24,7 +27,8 @@ Channel::~Channel()
 
 void Channel::update()
 {
-    eventloop_
+    //通过eventloop_的poller去更新channel的interested events.
+    eventloop_->updateChannel(this);
 }
 
 int Channel::GetAllEvents()

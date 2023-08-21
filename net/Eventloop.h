@@ -1,12 +1,10 @@
-#ifndef NET_SOCKET_H
-#define NET_SOCKET_H
+#ifndef NET_EVENTLOOP_H
+#define NET_EVENTLOOP_H
 
 #include "Channel.h"
 #include <sys/epoll.h>
 #include <functional>
 #include <memory>
-
-#define NGX_MAX_EVENTS 512
 
 class TcpConnection;
 class TcpConnectionMgrInterface;
@@ -32,9 +30,6 @@ public:
     bool HasChannel(Channel *);
 
 private:
-    void init();
-    
-private:
     bool quit_;
     std::unique_ptr<Poller> poller_;
 
@@ -42,6 +37,6 @@ private:
     ChannelList activeChanels_;
 };
 
-#endif // end NET_SOCKET_H
+#endif // end NET_EVENTLOOP_H
 
 

@@ -1,6 +1,6 @@
 #include "Eventloop.h"
 #include "connection.h"
-#include "sockethelper.h"
+#include "SocketHelper.h"
 
 #include <asm-generic/errno-base.h>
 #include <asm-generic/errno.h>
@@ -27,14 +27,9 @@ const int kPollTimeMs = 10000;
 
 EventLoop::EventLoop()
     :quit_(false)
+    ,poller_(Poller::NewDefaultPoller(this))
 {
-    init();
-}
-
-void EventLoop::init()
-{
-    poller_.reset(Poller::NewDefaultPoller(this));
-
+    
 }
 
 EventLoop::~EventLoop()
@@ -59,7 +54,7 @@ void EventLoop::loop()
 
 void EventLoop::runInLoop(Functor cb)
 {
-    
+    cb();
 }
 
 void EventLoop::updateChannel(Channel *channel)
