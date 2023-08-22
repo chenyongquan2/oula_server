@@ -12,7 +12,7 @@ Acceptor::Acceptor(EventLoop* eventloop)
     ,isListening_(false)
 {
     int sockfd = SocketHelper::CreateNonblockingOrDie(AF_INET);
-    
+
     //Todo:得再在bind之前，设置端口和地址复用。
     SocketHelper::setReuseAddr(sockfd, true);
     SocketHelper::setReusePort(sockfd, true);
@@ -50,7 +50,7 @@ void Acceptor::HandleRead()
     //accept the connect
 
     int connfd = acceptSocket_->accept();
-    if(connfd>0)
+    if(connfd>=0)
     {
         if(newConnectionCallback_)
         {

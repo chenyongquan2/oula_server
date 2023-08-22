@@ -18,6 +18,16 @@ TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd)
     channel_->SetWirteCallback(std::bind(&TcpConnection::handleWirte, this));
 }
 
+TcpConnection::~TcpConnection()
+{
+
+}
+
+void TcpConnection::ConnectEstablished()
+{
+    channel_->EnableReadEvent();
+}
+
 void TcpConnection::handleRead()
 {
     std::cout << "handleRead" << std::endl;

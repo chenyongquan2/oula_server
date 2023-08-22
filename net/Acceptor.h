@@ -4,6 +4,7 @@
 #include "memory"
 #include <functional>
 #include <memory>
+#include "Callback.h"
 
 
 class EventLoop;
@@ -11,7 +12,7 @@ class Socket;
 class Channel;
 class InnetAddress;
 
-typedef std::function<void(int sockfd)> NewConnectionCallback;
+
 class Acceptor
 {
 public:
@@ -27,7 +28,7 @@ public:
     {
         newConnectionCallback_  = cb;
     }
-    
+
 private:
     void HandleRead();
 
