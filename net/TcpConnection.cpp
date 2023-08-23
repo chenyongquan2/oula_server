@@ -1,7 +1,9 @@
 #include "TcpConnection.h"
 #include "Channel.h"
 #include "Socket.h"
+#include <cstddef>
 #include <iostream>
+#include "Buffer.h"
 
 
 // void defaultConnectionCallback(const TcpConnectionPtr& conn)
@@ -31,6 +33,20 @@ void TcpConnection::ConnectEstablished()
 void TcpConnection::handleRead()
 {
     std::cout << "handleRead" << std::endl;
+    //read the data from socket ,save to the buffer space;
+    size_t n = inputBuffer_.readFd(channel_->GetSocketFd());
+    if(n>0)
+    {
+        messageCallback_(shared_from_this(), &inputBuffer_);
+    }
+    else if(n==0)
+    {
+        //close
+    }
+    else
+    {
+        //error
+    }
 }
 
 void TcpConnection::handleWirte()

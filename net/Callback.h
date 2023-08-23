@@ -6,6 +6,7 @@
 #include <memory>
 
 class TcpConnection;
+class Buffer;
 
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
@@ -13,7 +14,10 @@ typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
 //新连接accept返回后，触发的回调。
 typedef std::function<void(int sockfd)> NewConnectionCallback;
 //可读的回调
-typedef std::function<void(const TcpConnectionPtr&)> MessageCallback;
+typedef std::function<void(const TcpConnectionPtr&, Buffer*)> MessageCallback;
+
+
+void defaultMessageCallback(const TcpConnectionPtr&, Buffer*);
 
 
 #endif // NET_CALLBACK_H

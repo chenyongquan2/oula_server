@@ -6,6 +6,7 @@
 #include <functional>
 #include <memory>
 #include "Callback.h"
+#include "Buffer.h"
 class EventLoop;
 class Channel;
 class Socket;
@@ -13,7 +14,7 @@ class TcpConnection;
 
 void defaultConnectionCallback(const TcpConnectionPtr& conn);
 
-class TcpConnection
+class TcpConnection :public std::enable_shared_from_this<TcpConnection>
 {
 public:
     TcpConnection(EventLoop * eventloop, int sockfd);
@@ -41,6 +42,9 @@ private:
     //conn event callback
     //NewConnectionCallback connectionCallback_;
     MessageCallback messageCallback_;
+
+    //buffer
+    Buffer inputBuffer_;
  
 };
 

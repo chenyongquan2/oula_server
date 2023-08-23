@@ -7,11 +7,13 @@
 #include <functional>
 #include <string>
 #include "iostream"
+#include "Callback.h"
 
 TcpServer::TcpServer(EventLoop* eventloop)
     :eventloop_(eventloop)
     ,acceptor_(new Acceptor(eventloop))
     ,nextConnId_(1)
+    ,messageCallback_(defaultMessageCallback)//默认读事件处理函数。
 {
 
     //当acceptor accpet了新连接之后，需要调用 TcpServer::newConnection，来把conn给放到连接池里面管理。
