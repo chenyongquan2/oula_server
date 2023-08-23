@@ -31,6 +31,12 @@ void Channel::update()
     eventloop_->updateChannel(this);
 }
 
+void Channel::remove()
+{
+    //remove the channel's event in the event loop
+    eventloop_->removeChannel(this);
+}
+
 int Channel::GetAllEvents()
 {
     return events_;
@@ -67,6 +73,11 @@ void Channel::DisableAllEvent()
     update();
 }
 
+ bool Channel::IsNoneEvent()
+ {
+    return events_ == KNoneEvent;
+ }
+
 bool Channel::IsEnableReadEvent()
 {
     return events_ & KReadEvent;
@@ -84,8 +95,28 @@ void Channel::SetReceiveEvent(int revt)
 
 void Channel::HandleEvent()
 {
-    if(rEvents_ & POLLIN)
+    if((rEvents_ & POLLHUP) && !(rEvents_ & POLLIN))
     {
+        //POLLHUP 的全称是 "Poll Hang Up"，它是基于 poll 函数的一个事件标志。
+        //POLLHUP 用于检测文件描述符上的挂起（hang up）事件。
+        //当与文件描述符关联的连接被远程对等方关闭时，会触发 POLLHUP 事件。
+        //当与文件描述符关联的连接发生错误或异常情况时，也可能触发 POLLHUP 事件
+        //需要注意的是，POLLHUP 事件可能与其他事件同时发生。因此，在处理事件时，通常需要综合考虑其他事件标志，例如 POLLIN（可读事件）或 POLLOUT（可写事件）。
+        //具体的触发条件和处理方式可能会因操作系统、编程语言或应用场景而有所不同。
+        if(closeCallback_)
+        {
+            closeCallback_();
+        }
+    }
+
+    
+    if(rEvents_ & (POLLIN | POLLPRI|  POLLRDHUP))
+    {
+        //POLLRDHUP 的全称是 "Poll Read Hang Up"，它是基于 poll 函数的一个事件标志。POLLRDHUP 用于检测文件描述符上的半关闭（half-close）事件
+        //需要注意的是，POLLRDHUP 事件可能与其他事件同时发生
+
+        //POLLPRI 的英文全称是 "Poll Priority"，它是基于 poll 函数的一个事件标志。POLLPRI 用于检测紧急数据的到达，通常与带外数据（out-of-band data）相关。
+        //POLLPRI 事件可能与其他事件同时发生，因此在处理事件时通常需要综合考虑其他事件标志，
         if(readCallback_)
         {
             readCallback_();
@@ -98,16 +129,6 @@ void Channel::HandleEvent()
             writeCallback_();
         }
     }
-}
-
-void Channel::SetReadCallback(EventCallback callback)
-{
-    readCallback_ = callback;
-}
-
-void Channel::SetWirteCallback(EventCallback callback)
-{
-    writeCallback_ = callback;
 }
 
 int Channel::GetSocketFd()

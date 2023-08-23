@@ -19,11 +19,23 @@ public:
 
     //去派发事件，根据不同的event去执行对应类型的callback
     void HandleEvent();
-    void SetReadCallback(EventCallback callback);
-    void SetWirteCallback(EventCallback callback);
+    void SetReadCallback(const EventCallback& cb)
+    {
+        readCallback_ = cb;
+    }
+    void SetWirteCallback(const EventCallback& cb)
+    {
+        writeCallback_ = cb;
+    }
+    void SetCloseCallback(const EventCallback& cb)
+    {
+        closeCallback_ = cb;
+    }
 
     int GetAllEvents();
+    
     void DisableAllEvent();
+    bool IsNoneEvent();
 
     void EnableReadEvent();
     void DisableReadEvent();
@@ -35,7 +47,10 @@ public:
     
     void SetReceiveEvent(int revt);
 
+    //remove the channel's event in the event loop
+    void remove();
 private:
+    //update event in the event loop
     void update();
     
 private:
@@ -46,7 +61,7 @@ private:
 
     EventCallback readCallback_;
     EventCallback writeCallback_;
-
+    EventCallback closeCallback_;
 
 
 private:

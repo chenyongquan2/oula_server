@@ -41,12 +41,26 @@ void TcpServer::newConnection(int sockfd)
     std::cout << "TcpServer::newConnection sockfd:" << sockfd << 
         "connId:" << nextConnId_ << std::endl;
     
-    TcpConnectionPtr conn = std::make_shared<TcpConnection>(eventloop_,sockfd);
-    connections_[std::to_string(nextConnId_)] = conn;
+    std::string name = std::to_string(nextConnId_);
+    TcpConnectionPtr conn = std::make_shared<TcpConnection>(eventloop_,sockfd, name);
+    connections_[name] = conn;
     conn->setMessageCallback(messageCallback_);
+    //notice:std::bind 创建的临时函数对象,是一个右值,
+    //所以setCloseCallback的参数得是右值，void setCloseCallback(const CloseCallback& cb)
+    //而不能为void setCloseCallback(const CloseCallback& cb)
+    conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, std::placeholders::_1));
 
     //执行conn的ConnectEstablished方法，将其的chanel给enableReading
     eventloop_->runInLoop(std::bind(&TcpConnection::ConnectEstablished,conn));
 
     ++nextConnId_;
+}
+
+void TcpServer::removeConnection(const TcpConnectionPtr& conn)
+{
+    const std::string& name = conn->name();
+    assert(connections_.find(name)!=connections_.end());
+    connections_.erase(name);
+
+
 }

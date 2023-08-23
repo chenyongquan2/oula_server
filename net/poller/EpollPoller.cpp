@@ -59,8 +59,16 @@ void EpollPoller::fillActiveChannels(int numEvents, ChannelList* activeChanels) 
 
 void EpollPoller::updateChannel(Channel* channel)  
 {
-    //Todo: how about EPOLL_CTL_MOD?
-    updateOperator2Poller(EPOLL_CTL_ADD, channel);
+    if(channel->IsNoneEvent())
+    {
+        //updateOperator2Poller(EPOLL_CTL_DEL, channel);
+    }
+    else
+    {
+        //Todo: how about EPOLL_CTL_MOD?
+        updateOperator2Poller(EPOLL_CTL_ADD, channel);
+    }
+    
 
 }
 void EpollPoller::RemoveChannel(Channel*channel)  

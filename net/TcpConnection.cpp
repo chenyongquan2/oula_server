@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <iostream>
 #include "Buffer.h"
+#include "TcpServer.h"
 
 
 // void defaultConnectionCallback(const TcpConnectionPtr& conn)
@@ -11,13 +12,15 @@
 //     std::cout << "new conn" << std::endl;
 // }
 
-TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd)
+TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd, std::string& name)
     :eventloop_(eventloop)
     ,socket_(new Socket(sockfd))
     ,channel_(new Channel(eventloop,sockfd))
+    ,name_(name)
 {
     channel_->SetReadCallback(std::bind(&TcpConnection::handleRead, this));
     channel_->SetWirteCallback(std::bind(&TcpConnection::handleWirte, this));
+    channel_->SetCloseCallback(std::bind(&TcpConnection::handleClose,this));
 }
 
 TcpConnection::~TcpConnection()
@@ -41,7 +44,7 @@ void TcpConnection::handleRead()
     }
     else if(n==0)
     {
-        //close
+        handleClose();
     }
     else
     {
@@ -52,4 +55,16 @@ void TcpConnection::handleRead()
 void TcpConnection::handleWirte()
 {
     std::cout << "handleWrite" << std::endl;
+}
+
+void TcpConnection::handleClose()
+{
+    //unregister from poller
+    channel_->DisableAllEvent();
+    //Todo:this will unregister from poller,how to fix ti.
+    channel_->remove();
+
+    //call TcpServer::removeConnection to remove the conn from the map.
+    closeCallback_(shared_from_this());
+    
 }

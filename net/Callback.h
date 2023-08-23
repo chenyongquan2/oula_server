@@ -16,6 +16,9 @@ typedef std::function<void(int sockfd)> NewConnectionCallback;
 //可读的回调
 typedef std::function<void(const TcpConnectionPtr&, Buffer*)> MessageCallback;
 
+//close的回调
+typedef std::function<void(const TcpConnectionPtr&)> CloseCallback;
+
 
 void defaultMessageCallback(const TcpConnectionPtr&, Buffer*);
 
