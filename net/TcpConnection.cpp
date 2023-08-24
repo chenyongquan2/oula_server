@@ -1,8 +1,12 @@
 #include "TcpConnection.h"
 #include "Channel.h"
 #include "Socket.h"
+#include <asm-generic/errno.h>
+#include <cerrno>
 #include <cstddef>
+#include <cstring>
 #include <iostream>
+#include <unistd.h>
 #include "Buffer.h"
 #include "TcpServer.h"
 
@@ -66,5 +70,40 @@ void TcpConnection::handleClose()
 
     //call TcpServer::removeConnection to remove the conn from the map.
     closeCallback_(shared_from_this());
+    
+}
+
+void TcpConnection::send(const std::string &message)
+{
+    int len = message.length();
+    return send(message.data(), len);
+
+}
+
+void TcpConnection::send(const void* data, size_t len)
+{
+    size_t nWrote = 0;
+    size_t remaining = len;
+
+    if(outputBuffer_.readableBytes() == 0)
+    {
+        //write the data directly.
+        nWrote =::write(channel_->GetSocketFd(), data, len);
+        if(nWrote >= 0)//Todo:can be == 0 ?
+        {
+            remaining -= nWrote;
+            if(remaining == 0 && writeCompleteCallback_)
+            {
+                //eventloop_->runInLoop(std::bind(writeCompleteCallback_), shared_from_this());
+            }
+        }
+        else if(nWrote < 0)
+        {
+            if(errno != EWOULDBLOCK)
+            {
+
+            }
+        }
+    }
     
 }

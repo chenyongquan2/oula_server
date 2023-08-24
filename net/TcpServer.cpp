@@ -45,6 +45,8 @@ void TcpServer::newConnection(int sockfd)
     TcpConnectionPtr conn = std::make_shared<TcpConnection>(eventloop_,sockfd, name);
     connections_[name] = conn;
     conn->setMessageCallback(messageCallback_);
+    conn->setWriteCompleteCallback(writeCompleteCallback_);
+
     //notice:std::bind 创建的临时函数对象,是一个右值,
     //所以setCloseCallback的参数得是右值，void setCloseCallback(const CloseCallback& cb)
     //而不能为void setCloseCallback(const CloseCallback& cb)

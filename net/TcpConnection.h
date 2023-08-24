@@ -3,6 +3,7 @@
 
 
 
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
@@ -26,8 +27,15 @@ public:
     const std::string& name() const 
         {return name_;}
 
+    void send(const std::string &message);
+    void send(const void* data, size_t len);
+    
+    //callback
     void setMessageCallback(const MessageCallback& cb)
         {messageCallback_ = cb;}
+
+    void setWriteCompleteCallback(const WriteCompleteCallback&cb)
+        {writeCompleteCallback_ = cb;}
 
     void setCloseCallback(const CloseCallback& cb)//notice arg cb must be a right value.
         {closeCallback_ = cb;}
@@ -52,12 +60,16 @@ private:
     //NewConnectionCallback connectionCallback_;
     MessageCallback messageCallback_;
 
+    //
+    WriteCompleteCallback writeCompleteCallback_;
+
     //when the conn closed, it will call this func, to remove the conn in the Tcpserver's conn map
     CloseCallback closeCallback_;
 
 
     //buffer
     Buffer inputBuffer_;
+    Buffer outputBuffer_;
 
     //prop
     std::string name_;

@@ -16,6 +16,9 @@ typedef std::function<void(int sockfd)> NewConnectionCallback;
 //可读的回调
 typedef std::function<void(const TcpConnectionPtr&, Buffer*)> MessageCallback;
 
+//把数据都从发送缓冲区发送到网络协议栈的回调
+typedef std::function<void(const TcpConnectionPtr&)> WriteCompleteCallback;
+
 //close的回调
 typedef std::function<void(const TcpConnectionPtr&)> CloseCallback;
 

@@ -23,8 +23,11 @@ public:
     ~TcpServer();
 
     void start();
-    void setMessageCallback(MessageCallback& cb)
+    void setMessageCallback(const MessageCallback& cb)
         {messageCallback_ = cb;}
+
+    void setWriteCompleteCallback(const WriteCompleteCallback& cb)
+        {writeCompleteCallback_ = cb;}
 
 private:
     void newConnection(int sockfd);//, const InetAddress& peerAddr
@@ -38,6 +41,7 @@ private:
 
     //user set callback
     MessageCallback messageCallback_;
+    WriteCompleteCallback writeCompleteCallback_;
 };
 
 
