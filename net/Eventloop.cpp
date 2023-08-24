@@ -1,5 +1,4 @@
 #include "Eventloop.h"
-#include "connection.h"
 #include "SocketHelper.h"
 
 #include <asm-generic/errno-base.h>

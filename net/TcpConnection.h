@@ -7,9 +7,11 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include "Acceptor.h"
 #include "Callback.h"
 #include "Buffer.h"
 #include "string.h"
+#include "utils/InetAddress.h"
 
 class EventLoop;
 class Channel;
@@ -21,7 +23,7 @@ void defaultConnectionCallback(const TcpConnectionPtr& conn);
 class TcpConnection :public std::enable_shared_from_this<TcpConnection>
 {
 public:
-    TcpConnection(EventLoop * eventloop, int sockfd, std::string& name);
+    TcpConnection(EventLoop * eventloop, int sockfd, std::string& name, const InetAddress& localAddr, const InetAddress& peerAddr);
     ~TcpConnection();
 
     const std::string& name() const 
@@ -73,6 +75,8 @@ private:
 
     //prop
     std::string name_;
+    const InetAddress localAddr_;
+    const InetAddress peerAddr_;
  
 };
 

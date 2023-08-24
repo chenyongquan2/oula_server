@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include "utils/InetAddress.h"
 
-Acceptor::Acceptor(EventLoop* eventloop)
+Acceptor::Acceptor(EventLoop* eventloop, const InetAddress& listenAddr)
     :eventloop_(eventloop)
     ,isListening_(false)
 {
@@ -18,7 +18,7 @@ Acceptor::Acceptor(EventLoop* eventloop)
     SocketHelper::setReusePort(sockfd, true);
 
     acceptSocket_ = std::make_unique<Socket>(sockfd);
-    acceptSocket_->bindAddress();
+    acceptSocket_->bindAddress(listenAddr);
 
     acceptChannel_ = std::make_unique<Channel>(eventloop_, acceptSocket_->fd());
     acceptChannel_->SetReadCallback(std::bind(&Acceptor::HandleRead,this));

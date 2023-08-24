@@ -10,7 +10,7 @@
 class EventLoop;
 class Socket;
 class Channel;
-class InnetAddress;
+class InetAddress;
 
 
 class Acceptor
@@ -18,7 +18,7 @@ class Acceptor
 public:
     
 public:
-    Acceptor(EventLoop* eventloop);
+    Acceptor(EventLoop* eventloop, const InetAddress& listenAddr);
     ~Acceptor();
 
     void listen();

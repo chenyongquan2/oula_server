@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <cstring>
 
 static void _SetNonBlockingAndCloseOnExec(int sockfd)
 {
@@ -46,16 +47,10 @@ int CreateNonblockingOrDie(sa_family_t family)
     return sockfd;
 }
 
-void bindOrDie(int sockfd)
+void bindOrDie(int sockfd, const struct sockaddr* addr)
 {
-    struct sockaddr_in bindaddr;
-    //todo：sockaddr 
-    bindaddr.sin_family=AF_INET;
-    bindaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    static constexpr int bindPort = 1234;
-    bindaddr.sin_port = htons(bindPort);
 
-    int ret = ::bind(sockfd, (struct sockaddr *)&bindaddr,sizeof(bindaddr));
+    int ret = ::bind(sockfd, (struct sockaddr *)addr,sizeof(*addr));
     if(ret <0)
     {
 
@@ -104,6 +99,44 @@ int accept(int listenSockfd, struct sockaddr_in* addr)
     //Todo:check error?
 
     return connfd;
+}
+
+struct sockaddr_in getLocalAddr(int sockfd)
+{
+    sockaddr_in addr;
+    memset(&addr,0,sizeof(addr));
+    struct sockaddr* pAddr = sockaddr_cast(&addr);
+    socklen_t addlen = static_cast<socklen_t>(sizeof(addr));
+    if(::getsockname(sockfd, pAddr, &addlen) < 0)
+    {
+
+    }
+    return addr;
+}
+
+struct sockaddr_in getPeerAddr(int sockfd)
+{
+    sockaddr_in addr;
+    memset(&addr,0,sizeof(addr));
+    struct sockaddr* pAddr = sockaddr_cast(&addr);
+    socklen_t addlen = static_cast<socklen_t>(sizeof(addr));
+    if(::getpeername(sockfd, pAddr, &addlen) < 0)
+    {
+
+    }
+    return addr;
+}
+
+struct sockaddr* sockaddr_cast(struct sockaddr_in * addr)
+{
+    struct sockaddr* pAddr = static_cast<struct sockaddr*>((void *)(addr));
+    return pAddr;
+}
+
+const struct sockaddr* sockaddr_cast(const struct sockaddr_in * addr)
+{
+    const struct sockaddr* pAddr = static_cast<const struct sockaddr*>((void *)(addr));
+    return pAddr;
 }
 
 }

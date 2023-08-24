@@ -4,6 +4,7 @@
 #include <iostream>
 #include "net/Eventloop.h"
 #include "net/TcpServer.h"
+#include "net/utils/InetAddress.h"
 #include "threadpool/threadpool.h"
 
 using namespace std;
@@ -44,7 +45,8 @@ int main()
     //testThreadpool();
     
     EventLoop eventLoop;
-    TcpServer tcpServer(&eventLoop);
+    InetAddress listenAddr(1234);
+    TcpServer tcpServer(&eventLoop, listenAddr);
     tcpServer.start();
     eventLoop.loop();
     

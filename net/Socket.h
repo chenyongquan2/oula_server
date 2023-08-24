@@ -3,6 +3,7 @@
 
 class EventLoop;
 class TcpConnection;
+class InetAddress;
 
 class Socket
 {
@@ -12,7 +13,7 @@ public:
 
     int fd();
     
-    void bindAddress();
+    void bindAddress(const InetAddress& listenAddr);
     void listen();
 
     //only if the listen socket can call this function

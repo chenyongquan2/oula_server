@@ -19,7 +19,7 @@ class TcpServer
 public:
     typedef std::map<std::string, TcpConnectionPtr> ConnectionMap;
 public:
-    TcpServer(EventLoop* eventloop);//Todo:const InetAddress& listenAddr
+    TcpServer(EventLoop* eventloop, const InetAddress& listenAddr);
     ~TcpServer();
 
     void start();

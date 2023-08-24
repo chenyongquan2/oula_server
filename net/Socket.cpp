@@ -1,5 +1,6 @@
 #include "Socket.h"
 #include "SocketHelper.h"  
+#include "utils/InetAddress.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -23,9 +24,9 @@ int Socket::fd()
     return sockfd_;
 }
 
-void Socket::bindAddress()
+void Socket::bindAddress(const InetAddress& listenAddr)
 {
-    SocketHelper::bindOrDie(sockfd_);
+    SocketHelper::bindOrDie(sockfd_, listenAddr.getSockAddr());
 }
 
 void Socket::listen()

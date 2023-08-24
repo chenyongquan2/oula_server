@@ -3,15 +3,17 @@
 #include "Acceptor.h"
 #include "Channel.h"
 #include "Eventloop.h"
+#include "SocketHelper.h"
 #include "TcpConnection.h"
 #include <functional>
 #include <string>
 #include "iostream"
 #include "Callback.h"
+#include "utils/InetAddress.h"
 
-TcpServer::TcpServer(EventLoop* eventloop)
+TcpServer::TcpServer(EventLoop* eventloop, const InetAddress& listenAddr)
     :eventloop_(eventloop)
-    ,acceptor_(new Acceptor(eventloop))
+    ,acceptor_(new Acceptor(eventloop, listenAddr))
     ,nextConnId_(1)
     ,messageCallback_(defaultMessageCallback)//默认读事件处理函数。
 {
@@ -37,12 +39,18 @@ void TcpServer::start()
 
 void TcpServer::newConnection(int sockfd)
 {
+    InetAddress localAddr(SocketHelper::getLocalAddr(sockfd));
+    InetAddress peerAddr(SocketHelper::getPeerAddr(sockfd));
+    std::string name = std::to_string(nextConnId_);
+
     //这里会由accrptor给回调到此。
     std::cout << "TcpServer::newConnection sockfd:" << sockfd << 
-        "connId:" << nextConnId_ << std::endl;
+        "connId:" << nextConnId_  
+        << ",localAddr ip:" << localAddr.toIp() << ",port:" << localAddr.port()
+        << ",peerAddr ip:" << peerAddr.toIp() << ",port:" << peerAddr.port()
+        << std::endl;
     
-    std::string name = std::to_string(nextConnId_);
-    TcpConnectionPtr conn = std::make_shared<TcpConnection>(eventloop_,sockfd, name);
+    TcpConnectionPtr conn = std::make_shared<TcpConnection>(eventloop_,sockfd, name, localAddr, peerAddr);
     connections_[name] = conn;
     conn->setMessageCallback(messageCallback_);
     conn->setWriteCompleteCallback(writeCompleteCallback_);
