@@ -5,6 +5,9 @@
 #include <sys/epoll.h>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <sys/types.h>
+#include <atomic>
 
 class TcpConnection;
 class TcpConnectionMgrInterface;
@@ -22,19 +25,42 @@ public:
     ~EventLoop();
 
     void loop();
+    //if it send to the same loop, it will run within the function, otherwise, it will call queueInLoop
     void runInLoop(Functor cb);
+    //make sure the cb will call in whe loop thread, it will run after polling
+    void queueInLoop(Functor cb);
 
     //管理channel相关
     void updateChannel(Channel *);
     void removeChannel(Channel *);
     bool HasChannel(Channel *);
+    void WakeupToHandlePendingFunctors();
 
 private:
+    void assertInLoopThread();
+    bool isInLoopThread() const;
+
+
+    void handleWakeupChannelRaad();
+    void handlePendingFunctors();//deal with the pennding tasks.
+
+private:
+    const pid_t threadId_;
     bool quit_;
     std::unique_ptr<Poller> poller_;
 
     typedef std::vector<Channel*> ChannelList;
     ChannelList activeChanels_;
+
+    //when the timer timeout, it can wakeup the eventloop to handle read by the wakeChannel
+    int wakeupFd_;
+    std::unique_ptr<Channel> wakeupChannel_;//to handel read
+    //deal it in the loop
+    std::vector<Functor> pendingFunctors_;
+    std::mutex mtx_;
+    //todo:if it needs really atomic?
+    std::atomic<bool> isCallingPendingFunctors_;
+
 };
 
 #endif // end NET_EVENTLOOP_H
