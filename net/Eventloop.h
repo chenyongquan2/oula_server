@@ -1,6 +1,7 @@
 #ifndef NET_EVENTLOOP_H
 #define NET_EVENTLOOP_H
 
+#include "Callback.h"
 #include "Channel.h"
 #include <sys/epoll.h>
 #include <functional>
@@ -8,12 +9,16 @@
 #include <mutex>
 #include <sys/types.h>
 #include <atomic>
+#include "Timer.h"
+
 #include "utils/Timestamp.h"
+#include "TimerId.h"
 
 class TcpConnection;
 class TcpConnectionMgrInterface;
 
 class Poller;
+class TimerQueue;
 
 class EventLoop
 {
@@ -38,6 +43,12 @@ public:
     bool HasChannel(Channel *);
     void WakeupToHandlePendingFunctors();
 
+    //timer's methods
+    TimerId runAt(Timestamp time, TimerCallback cb);
+    TimerId runAfter(double delay, TimerCallback cb);
+    TimerId runEvery(double interval, TimerCallback cb);
+    void cancle(TimerId& timerid);
+
 private:
     bool isInLoopThread() const;
 
@@ -54,6 +65,7 @@ private:
     ChannelList activeChanels_;
 
     //when the timer timeout, it can wakeup the eventloop to handle read by the wakeChannel
+    std::unique_ptr<TimerQueue> timerQueue_;
     int wakeupFd_;
     std::unique_ptr<Channel> wakeupChannel_;//to handel read
     //deal it in the loop

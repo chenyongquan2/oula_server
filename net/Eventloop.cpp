@@ -25,7 +25,9 @@
 #include "Poller.h"
 #include <unistd.h>
 #include <sys/eventfd.h>
+#include "TimerQueue.h"
 #include "utils/ThreadHelper.h"
+#include "utils/Timestamp.h"
 
 const int kPollTimeMs = 10000;
 
@@ -49,7 +51,7 @@ EventLoop::EventLoop()
     ,poller_(Poller::NewDefaultPoller(this))
     ,wakeupFd_(createEventFd())
     ,isCallingPendingFunctors_(false)
-    
+    ,timerQueue_(new TimerQueue(this))
 {
     wakeupChannel_ = std::make_unique<Channel>(this, wakeupFd_);
     wakeupChannel_->SetReadCallback(
@@ -173,6 +175,28 @@ void EventLoop::handlePendingFunctors()
         func();
     }
     isCallingPendingFunctors_ = false;
+}
+
+TimerId EventLoop::runAt(Timestamp time, TimerCallback cb)
+{
+    return timerQueue_->addTimer(cb, time, 0);
+}
+
+TimerId EventLoop::runAfter(double delay, TimerCallback cb)
+{
+    Timestamp time(addTime(Timestamp::getNow(), delay));
+    return runAt(time, cb);
+}
+
+TimerId EventLoop::runEvery(double interval, TimerCallback cb)
+{
+    Timestamp time(addTime(Timestamp::getNow(), interval));
+    return timerQueue_->addTimer(cb, time, interval);
+}
+
+void EventLoop::cancle(TimerId& timerid)
+{
+    return timerQueue_->cancle(timerid);
 }
 
 

@@ -38,6 +38,13 @@ int testThreadpool() {
 //全局变量和静态变量的初始化。
 ThreadPool* ThreadPool::m_pInstance = nullptr;
 
+void TestTimer()
+{
+    static int times = 0;
+    std::cout <<"TestTimer call "<< ++times << std::endl;
+
+}
+
 int main()
 {
     //懒汉式启动线程池
@@ -48,6 +55,10 @@ int main()
     InetAddress listenAddr(1234);
     TcpServer tcpServer(&eventLoop, listenAddr);
     tcpServer.start();
+    
+    //test timerqueue.
+    //eventLoop.runEvery(1, std::bind(&TestTimer));
+
     eventLoop.loop();
     
 
