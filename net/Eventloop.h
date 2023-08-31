@@ -8,6 +8,7 @@
 #include <mutex>
 #include <sys/types.h>
 #include <atomic>
+#include "utils/Timestamp.h"
 
 class TcpConnection;
 class TcpConnectionMgrInterface;
@@ -29,6 +30,7 @@ public:
     void runInLoop(Functor cb);
     //make sure the cb will call in whe loop thread, it will run after polling
     void queueInLoop(Functor cb);
+    void assertInLoopThread();
 
     //管理channel相关
     void updateChannel(Channel *);
@@ -37,7 +39,6 @@ public:
     void WakeupToHandlePendingFunctors();
 
 private:
-    void assertInLoopThread();
     bool isInLoopThread() const;
 
 

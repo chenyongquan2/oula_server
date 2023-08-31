@@ -25,5 +25,8 @@ typedef std::function<void(const TcpConnectionPtr&)> CloseCallback;
 
 void defaultMessageCallback(const TcpConnectionPtr&, Buffer*);
 
+//timer的回调
+typedef std::function<void()> TimerCallback;
+
 
 #endif // NET_CALLBACK_H
