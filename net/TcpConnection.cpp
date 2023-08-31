@@ -36,7 +36,15 @@ TcpConnection::~TcpConnection()
 
 void TcpConnection::ConnectEstablished()
 {
+    eventloop_->assertInLoopThread();
     channel_->EnableReadEvent();
+}
+
+void TcpConnection::ConnectDestoryed()
+{
+    eventloop_->assertInLoopThread();
+    channel_->DisableAllEvent();
+    channel_->remove();//Todo: what's the diff between remove and DisableAllEvent?
 }
 
 void TcpConnection::handleRead()

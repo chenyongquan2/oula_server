@@ -26,6 +26,7 @@ public:
     TcpConnection(EventLoop * eventloop, int sockfd, std::string& name, const InetAddress& localAddr, const InetAddress& peerAddr);
     ~TcpConnection();
 
+    EventLoop* getLoop() const { return eventloop_; }
     const std::string& name() const 
         {return name_;}
 
@@ -42,8 +43,11 @@ public:
     void setCloseCallback(const CloseCallback& cb)//notice arg cb must be a right value.
         {closeCallback_ = cb;}
     
-    //每一个conn建立之后会调用此函数。
+    //it will called when the conn established
     void ConnectEstablished();
+    //it will called when the conn destoryed
+    void ConnectDestoryed();
+
 
 private:
     //chanel会根据事件类型，执行TcpConnection层对应类型handle函数

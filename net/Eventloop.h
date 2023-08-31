@@ -13,6 +13,7 @@
 
 #include "utils/Timestamp.h"
 #include "TimerId.h"
+#include <thread>  
 
 class TcpConnection;
 class TcpConnectionMgrInterface;
@@ -49,6 +50,9 @@ public:
     TimerId runEvery(double interval, TimerCallback cb);
     void cancle(TimerId& timerid);
 
+    const std::thread::id GetThreadId() const
+        { return threadId_; }
+
 private:
     bool isInLoopThread() const;
 
@@ -57,7 +61,7 @@ private:
     void handlePendingFunctors();//deal with the pennding tasks.
 
 private:
-    const pid_t threadId_;
+    const std::thread::id threadId_;
     bool quit_;
     std::unique_ptr<Poller> poller_;
 

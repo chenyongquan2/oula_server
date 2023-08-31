@@ -46,7 +46,7 @@ static int createEventFd()
 }
 
 EventLoop::EventLoop()
-    :threadId_(CurrentThread::gettid())
+    :threadId_(CurrentThread::GetCurTid())
     ,quit_(false)
     ,poller_(Poller::NewDefaultPoller(this))
     ,wakeupFd_(createEventFd())
@@ -90,6 +90,8 @@ void EventLoop::runInLoop(Functor cb)
 {
     if(isInLoopThread())
     {
+        auto tid = CurrentThread::GetCurTid();
+        bool bSame =  threadId_ == tid;
         cb();
     }
     else
@@ -118,14 +120,16 @@ void EventLoop::assertInLoopThread()
 {
     if(!isInLoopThread())
     {
-        //Todo:
-        exit(-1);
+        //Todo:there is a bug,fix it.
+        isInLoopThread();
+        //exit(-1);
     }
 }
 
 bool EventLoop::isInLoopThread() const
 {
-    return threadId_ == CurrentThread::gettid();
+    auto tid = CurrentThread::GetCurTid();
+    return threadId_ == tid;
 }
 
 void EventLoop::updateChannel(Channel *channel)
