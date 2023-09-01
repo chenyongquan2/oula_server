@@ -6,6 +6,7 @@
 #include <asm-generic/errno.h>
 #include <asm-generic/socket.h>
 #include <bits/stdint-uintn.h>
+#include <bits/types/sigset_t.h>
 #include <cerrno>
 #include <cstddef>
 #include <functional>
@@ -29,8 +30,52 @@
 #include "TimerQueue.h"
 #include "utils/CurrentThread.h"
 #include "utils/Timestamp.h"
+#include <signal.h>
+#include <csignal>
+#include <unistd.h> 
 
-const int kPollTimeMs = 10000;
+namespace 
+{
+    const int kPollTimeMs = 10000;
+
+    
+    class IgnoreSigPipe
+    {
+    public:
+        //when the client closed the conn, we still write or send data to the client socket
+        //it will throw the SIGPIPE signal, it's default handle function is dump.
+        //so we should set the handle function to SIG_IGN to prevent dump happen because the SIGPIPE
+        IgnoreSigPipe()
+        {
+            //写法1
+            //::signal(SIGPIPE, SIG_IGN);
+            //写法2(好像更推荐？)
+            struct sigaction sa;
+            sa.sa_handler = &IgnoreSigPipe::signalHandler;
+            sigemptyset(&sa.sa_mask);
+            sa.sa_flags=0;
+            if(sigaction(SIGPIPE, &sa, nullptr) == -1)
+            {
+                std::cout << "IgnoreSigPipe sigaction failed" << std::endl; 
+                exit(-1);
+            }
+            
+        }
+    private:
+        static void signalHandler(int signal) {  
+            std::cout << "Received signal: " << signal << std::endl;  
+        
+            // 执行其他操作，如关闭文件、释放资源等  
+        
+            // 退出程序  
+            //exit(signal);  
+        }  
+    };
+
+    // 这段代码是用于忽略SIGPIPE信号的处理。SIGPIPE是一个在Unix-like系统中的信号，用于指示一个进程在向一个已经关闭的管道（或者Socket）写数据时发生的错误。默认情况下，当进程向一个已关闭的管道写数据时，系统会向进程发送SIGPIPE信号，导致进程终止。
+    IgnoreSigPipe g_ignoreSigPipe;
+
+};
 
 static int createEventFd()
 {

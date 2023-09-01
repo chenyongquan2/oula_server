@@ -49,9 +49,16 @@ public:
 
     //remove the channel's event in the event loop
     void remove();
+
+     // for debug
+    std::string reventsToString() const;
+    std::string eventsToString() const;
+
 private:
     //update event in the event loop
     void update();
+
+    static std::string eventsToString(int fd, int ev);
     
 private:
     EventLoop* eventloop_;
@@ -63,6 +70,7 @@ private:
     EventCallback writeCallback_;
     EventCallback closeCallback_;
 
+    bool eventHandling_;
 
 private:
     const int m_socketFd;

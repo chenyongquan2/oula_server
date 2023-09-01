@@ -1,7 +1,10 @@
 #include "Channel.h"
 
+#include <cassert>
 #include <poll.h>
+#include <sstream>
 #include <sys/poll.h>
+#include <iostream>
 
 #include "Eventloop.h"
 
@@ -17,12 +20,13 @@ Channel::Channel(EventLoop* pEventLoop, int fd)
     : eventloop_(pEventLoop)
     , m_socketFd(fd)
     , events_(KNoneEvent)
+    , eventHandling_(false)
 {
 
 }
 Channel::~Channel()
 {
-
+    assert(!eventHandling_);
 }
 
 void Channel::update()
@@ -95,6 +99,8 @@ void Channel::SetReceiveEvent(int revt)
 
 void Channel::HandleEvent()
 {
+    eventHandling_ = true;
+    std::cout << reventsToString() << std::endl;
     if((rEvents_ & POLLHUP) && !(rEvents_ & POLLIN))
     {
         //POLLHUP 的全称是 "Poll Hang Up"，它是基于 poll 函数的一个事件标志。
@@ -129,12 +135,46 @@ void Channel::HandleEvent()
             writeCallback_();
         }
     }
+    eventHandling_ = false;
 }
 
 int Channel::GetSocketFd()
 {
     return m_socketFd;
 }
+
+std::string Channel::reventsToString() const
+{
+  return eventsToString(m_socketFd, rEvents_);
+}
+
+std::string Channel::eventsToString() const
+{
+  return eventsToString(m_socketFd, events_);
+}
+
+std::string Channel::eventsToString(int fd, int ev)
+{
+    std::ostringstream oss;
+    oss << "sockFd:" << fd << ",events happen:";
+    if (ev & POLLIN)
+    oss << "IN ";
+    if (ev & POLLPRI)
+        oss << "PRI ";
+    if (ev & POLLOUT)
+        oss << "OUT ";
+    if (ev & POLLHUP)
+        oss << "HUP ";
+    if (ev & POLLRDHUP)
+        oss << "RDHUP ";
+    if (ev & POLLERR)
+        oss << "ERR ";
+    if (ev & POLLNVAL)
+        oss << "NVAL ";
+
+    return oss.str();
+}
+
 
 
 
