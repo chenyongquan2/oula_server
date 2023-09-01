@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include "iostream"
 #include "TcpConnection.h"
-#include "utils/ThreadHelper.h"
+#include "utils/CurrentThread.h"
 #include "Eventloop.h"
 
 

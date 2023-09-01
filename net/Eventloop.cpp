@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include <sys/eventfd.h>
 #include "TimerQueue.h"
-#include "utils/ThreadHelper.h"
+#include "utils/CurrentThread.h"
 #include "utils/Timestamp.h"
 
 const int kPollTimeMs = 10000;
@@ -46,7 +46,7 @@ static int createEventFd()
 }
 
 EventLoop::EventLoop()
-    :threadId_(CurrentThread::GetCurTid())
+    :threadId_(CurrentThread::tid())
     ,quit_(false)
     ,poller_(Poller::NewDefaultPoller(this))
     ,wakeupFd_(createEventFd())
@@ -90,8 +90,6 @@ void EventLoop::runInLoop(Functor cb)
 {
     if(isInLoopThread())
     {
-        auto tid = CurrentThread::GetCurTid();
-        bool bSame =  threadId_ == tid;
         cb();
     }
     else
@@ -120,15 +118,13 @@ void EventLoop::assertInLoopThread()
 {
     if(!isInLoopThread())
     {
-        //Todo:there is a bug,fix it.
-        isInLoopThread();
-        //exit(-1);
+        exit(-1);
     }
 }
 
 bool EventLoop::isInLoopThread() const
 {
-    auto tid = CurrentThread::GetCurTid();
+    auto tid = CurrentThread::tid();
     return threadId_ == tid;
 }
 

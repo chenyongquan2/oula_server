@@ -1,5 +1,5 @@
-#ifndef NET_UTILS_THREADHELPER_H
-#define NET_UTILS_THREADHELPER_H
+#ifndef NET_UTILS_CURRENTTHREAD_H
+#define NET_UTILS_CURRENTTHREAD_H
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -10,17 +10,20 @@
 
 namespace CurrentThread {
 
-//todo:why it must be inline?
-// inline pid_t GetCurTid()
-// {
-//     //Todo:因为这是一个系统调用很耗时，后面可以引入缓存机制来优化。
-//     return static_cast<pid_t>(::syscall(SYS_gettid));
-// }
+extern thread_local std::thread::id t_cacheTid;
 
-inline std::thread::id GetCurTid()
+inline void cacheTid()
 {
-    std::thread::id tid = std::this_thread::get_id();
-    return tid;
+    t_cacheTid = std::this_thread::get_id();
+}
+
+inline std::thread::id tid()
+{
+    if(CurrentThread::t_cacheTid == std::thread::id())
+    {
+        cacheTid();
+    }
+    return CurrentThread::t_cacheTid;
 }
 
 inline std::string ConvertThreadId2Str(const std::thread::id tid)
@@ -41,9 +44,7 @@ inline std::string GetCurThreadIdStr()
     return str;
 }
 
-
-
 };
 
 
-#endif //NET_UTILS_THREADHELPER_H
+#endif //NET_UTILS_CURRENTTHREAD_H

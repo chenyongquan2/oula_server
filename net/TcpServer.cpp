@@ -79,7 +79,8 @@ void TcpServer::newConnection(int sockfd)
     conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, std::placeholders::_1));
 
     //执行conn的ConnectEstablished方法，将其的chanel给enableReading
-    eventloop_->runInLoop(std::bind(&TcpConnection::ConnectEstablished,conn));
+    ioLoop->runInLoop(std::bind(&TcpConnection::ConnectEstablished,conn));
+    //eventloop_->runInLoop(std::bind(&TcpConnection::ConnectEstablished,conn));
 
     ++nextConnId_;
 }
