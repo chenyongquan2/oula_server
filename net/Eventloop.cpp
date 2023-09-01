@@ -5,6 +5,7 @@
 #include <asm-generic/errno-base.h>
 #include <asm-generic/errno.h>
 #include <asm-generic/socket.h>
+#include <bits/stdint-uintn.h>
 #include <cerrno>
 #include <cstddef>
 #include <functional>
@@ -38,12 +39,19 @@ static int createEventFd()
     // 线程安全：多个线程可以同时操作同一个eventfd，而无需额外的同步措施。
     // 高效通知：当一个进程向eventfd写入一个64位的无符号整数时，其他等待该eventfd的进程可以立即被唤醒。
     int evtfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    
+    // NOTICE：根据Linux的eventfd文档，eventfd是一个用于进程间通信的文件描述符，它的读取和写入操作都使用无符号64位整数。因此，为了正确唤醒eventfd，写入的数据类型必须是uint64_t。
+    // 如果您将写入的数据类型改为int，那么编译器可能会发出类型不匹配的警告或错误，并且写入的数据可能无法正确唤醒eventfd。
+    // 因此，为了确保正确唤醒eventfd，请使用uint64_t类型的数据进行写入。
+
     if(evtfd<0)
     {
 
     }
     return evtfd;
 }
+
+int EventLoop::loopNextIdx_ = 0;
 
 EventLoop::EventLoop()
     :threadId_(CurrentThread::tid())
@@ -53,6 +61,9 @@ EventLoop::EventLoop()
     ,isCallingPendingFunctors_(false)
     ,timerQueue_(new TimerQueue(this))
 {
+    loopIdx_ = loopNextIdx_;
+    loopNextIdx_++;
+
     wakeupChannel_ = std::make_unique<Channel>(this, wakeupFd_);
     wakeupChannel_->SetReadCallback(
         std::bind(&EventLoop::handleWakeupChannelRaad, this)
@@ -106,7 +117,7 @@ void EventLoop::queueInLoop(Functor cb)
     }
 
     //有以下两种情况需要唤醒
-    //1.当前不是在io线程;2.正在消费pendingFunctors队列，此时来了新任务。
+    //1.当前不是在eventloop所属的线程;2.正在消费pendingFunctors队列，此时来了新任务。
     if(!isInLoopThread() || isCallingPendingFunctors_)
     {
         WakeupToHandlePendingFunctors();
@@ -146,16 +157,39 @@ bool EventLoop::HasChannel(Channel *channel)
 
 void EventLoop::WakeupToHandlePendingFunctors()
 {
-    //write anything to the wakeupFd_ in order to wakeup the wakeupChannel_
-    int one = 1;
-    size_t n = ::write(wakeupFd_, (void *)&one, sizeof(one));
+    //write 64bits date(must be 64 bits) to the wakeupFd_ in order to wakeup the wakeupChannel_
+
+    //注意：根据Linux的eventfd文档，eventfd是一个用于进程间通信的文件描述符，它的读取和写入操作都使用无符号64位整数。因此，为了正确唤醒eventfd，写入的数据类型必须是uint64_t。
+    // 如果您将写入的数据类型改为int，那么编译器可能会发出类型不匹配的警告或错误，并且写入的数据可能无法正确唤醒eventfd。
+    // 因此，为了确保正确唤醒eventfd，请使用uint64_t类型的数据进行写入。
+
+    //int one = 1; //write will return -1, error!
+    //int32_t one = 1; //write will return -1, error!
+    //int64_t one = 1; //write will return -1, error!
+    uint64_t one = 1;
+
+    //ssize_t是有符号整数类型，size_t是无符号整数类型。
+    ssize_t n = ::write(wakeupFd_, (void *)&one, sizeof(one));
+    if(n != sizeof(uint64_t))
+    {
+        std::cout << "EventLoop::wakeup() writes " << n << " bytes instead of 8, error occurs!";
+        //todo: throw error
+    }
 }
 
 void EventLoop::handleWakeupChannelRaad()
 {
-    //这里其实没太大作用，本意是通过此wakeupSocket来唤醒，eventloop去消费pendingFunctors
-    int one = 1;
-    size_t n = ::read(wakeupFd_, (void *)&one, sizeof(one));
+    uint64_t one = 1;
+    ssize_t n = ::read(wakeupFd_, (void *)&one, sizeof(one));
+    if(n != sizeof(uint64_t))
+    {
+        std::cout << "EventLoop::handleWakeupChannelRaad() reads " << n << " bytes instead of 8, error occurs!";
+        //todo: throw error
+    }
+    else
+    {
+        std::cout << "EventLoop::handleWakeupChannelRaad() sucessed!";
+    }
 }
 
 void EventLoop::handlePendingFunctors()

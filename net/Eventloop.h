@@ -53,6 +53,9 @@ public:
     const std::thread::id GetThreadId() const
         { return threadId_; }
 
+    bool isIoLoop() const 
+        {return loopIdx_ !=0;}
+
 private:
     bool isInLoopThread() const;
 
@@ -77,6 +80,9 @@ private:
     std::mutex mtx_;
     //todo:if it needs really atomic?
     std::atomic<bool> isCallingPendingFunctors_;
+
+    int loopIdx_;
+    static int loopNextIdx_;
 
 };
 

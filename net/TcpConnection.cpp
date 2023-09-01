@@ -39,6 +39,7 @@ void TcpConnection::ConnectEstablished()
     //强调此函数只能在eventloop_所绑定的线程中被调用
     eventloop_->assertInLoopThread();
     channel_->EnableReadEvent();
+    std::cout << "ConnectEstablished, and EnableReadEvent" << std::endl;
 }
 
 void TcpConnection::ConnectDestoryed()
