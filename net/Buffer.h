@@ -8,6 +8,14 @@
 #include <assert.h>
 #include <string.h>
 
+/// @code
+/// +-------------------+------------------+------------------+
+/// | prependable bytes |  readable bytes  |  writable bytes  |
+/// |                   |     (CONTENT)    |                  |
+/// +-------------------+------------------+------------------+
+/// |                   |                  |                  |
+/// 0      <=      readerIndex   <=   writerIndex    <=     size
+/// @endcode
 class Buffer
 {
 public:
@@ -25,13 +33,17 @@ public:
 
     }
     //read data from socket, then append to the writerIdx_ pos in this buffer space.
-    size_t readFd(int fd);
+    ssize_t readFd(int fd);
     
     size_t readableBytes() const 
     { return writerIdx_ - readerIdx_;}
 
     size_t writableBytes() const
     { return buffer_.size() - writerIdx_;}
+
+    //prepend表示在前面添加[0,readerIdx]之间的区间
+    size_t prependableBytes() const
+    { return readerIdx_;}
 
     char* beginWrite() 
     { return begin() + writerIdx_;}
@@ -64,8 +76,30 @@ public:
 
     void makeSpace(size_t len)
     {
-        //Todo: fix it
-        buffer_.resize(len);
+        //判断可写的空间是否够
+        size_t remainLen = writableBytes() + prependableBytes();
+        if(remainLen < len + kCheapPrepend)
+        {
+            //the remain size it not enough, resize it
+            // FIXME: move readable data
+            buffer_.resize(writerIdx_ + len);//resize more len size data.
+        }
+        else
+        {
+            //move readable data to the front pos, make space inside buffer
+            assert(kCheapPrepend < readerIdx_);
+            size_t readable = readableBytes();
+
+            std::copy(
+                begin()+ readerIdx_,
+                begin() + writerIdx_,
+                begin() + kCheapPrepend //dest pos
+            );
+            readerIdx_= kCheapPrepend;
+            writerIdx_=readerIdx_+readable;
+            assert(readable==readableBytes());
+        }
+        
     }
 
     //"peek" 也常用于指查看数据结构中的元素或查看缓冲区中的内容，而不对其进行修改或删除。

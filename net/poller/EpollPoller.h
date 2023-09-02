@@ -21,6 +21,7 @@ public:
 private:
     void fillActiveChannels(int numEvents, ChannelList* activeChanels) const;
     void updateOperator2Poller(int operation, Channel*channel);
+    const char* operationToString(int op);
 
 private:
     int epollfd_;

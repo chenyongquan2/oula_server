@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstring>
 #include <iostream>
+#include <sys/types.h>
 #include <unistd.h>
 #include "Buffer.h"
 #include "TcpServer.h"
@@ -72,7 +73,31 @@ void TcpConnection::handleRead()
 
 void TcpConnection::handleWirte()
 {
-    std::cout << "handleWrite" << std::endl;
+    std::cout << "handleWrite begin" << std::endl;
+    eventloop_->assertInLoopThread();
+    if(channel_->IsEnableWriteEvent())
+    {
+        ssize_t n = ::write(channel_->GetSocketFd(), outputBuffer_.peek(), outputBuffer_.readableBytes());
+        if(n>0)
+        {
+            outputBuffer_.retrieve(n);//pop data
+            if(outputBuffer_.readableBytes() == 0)
+            {
+                //finish to send all the remain data, disbale writing events.
+                channel_->DisableWriteEvent();
+            }
+        }
+        else
+        {
+            std::cout << "handleWrite to send non data" << std::endl;
+        }
+    }
+    else
+    {
+        //poller通知可写但是却又write不出去。。。
+        std::cout << "[handleWrite] conn fd:" << channel_->GetSocketFd() 
+            << "is down , no more writing" << std::endl;
+    }
 }
 
 void TcpConnection::handleClose()
@@ -112,7 +137,8 @@ void TcpConnection::send(const void* data, size_t len)
             remaining -= nWrote;
             if(remaining == 0 && writeCompleteCallback_)
             {
-                //eventloop_->runInLoop(std::bind(writeCompleteCallback_), shared_from_this());
+                //it will call user/tcpserver 's writeCompleteCallback_
+                eventloop_->queueInLoop(std::bind(writeCompleteCallback_, shared_from_this()));
             }
         }
         else if(nWrote < 0)
@@ -133,9 +159,14 @@ void TcpConnection::send(const void* data, size_t len)
 
     assert(remaining <= len);
     if(!errorOccurs && remaining > 0)
-    {
-        std::cout << "TcpConnection::send it has more data to send, add writing event to continue!" << std::endl;
-        
+    {   
+        //std::cout << "TcpConnection::send it still has more " <<remaining << " data to send!" << std::endl;    
+        outputBuffer_.append(static_cast<const char*>(data)+nWrote, remaining);
+        if(!channel_->IsEnableWriteEvent())
+        {
+            std::cout << "TcpConnection::send it still has more " <<remaining << " data to send!" << std::endl;  
+            channel_->EnableWriteEvent();
+        }
     }
    
     

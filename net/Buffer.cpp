@@ -5,7 +5,7 @@
 
 static constexpr size_t ExtraBufSize = 65535;
 
-size_t Buffer::readFd(int fd)
+ssize_t Buffer::readFd(int fd)
 {
     char extraBuf[ExtraBufSize];
     size_t writableSz = writableBytes();
@@ -21,7 +21,7 @@ size_t Buffer::readFd(int fd)
     const int iocnt = (writableSz < sizeof(extraBuf)) ? 2 : 1;
 
     //readv()函数是用于从多个散布的内存块中读取数据的函数，节省进行系统调用的次数
-    const size_t n = ::readv(fd, vec, iocnt);
+    const ssize_t n = ::readv(fd, vec, iocnt);
     if(n<0)
     {
 

@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 #include "Channel.h"
-class EventLoop;
+#include "Eventloop.h"
 
 class Poller
 {
@@ -23,6 +23,11 @@ public:
 
 
     bool HasChannel(Channel*);
+
+    void assertInLoopThread() const
+    {
+        return eventloop_->assertInLoopThread();
+    }
 
 protected:
     //key为socket Fd

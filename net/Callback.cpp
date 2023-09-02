@@ -19,10 +19,14 @@ void defaultMessageCallback(const TcpConnectionPtr& conn, Buffer* buffer)
 
     auto tid = conn->getLoop()->GetThreadId();
     std::string tidStr = CurrentThread::ConvertThreadId2Str(tid);
-    std::cout << "tid:" << tidStr << ",msg:" << str << std::endl;
-
-    TestSigPipe();
+    //std::cout << "tid:" << tidStr << ",msg:" << str << std::endl;
+    std::cout << "tid:" << tidStr << ",msg:" << std::endl;
+    //TestSigPipe();
 
     //echo to peer
-    conn->send(str);
+    //for(int i=0;i<1000;i++)
+    {
+        conn->send(str);
+    }
+    std::cout << "tid:" << tidStr << "finish to send all str:" << std::endl;
 }

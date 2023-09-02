@@ -1,8 +1,10 @@
 #include "EpollPoller.h"
 #include "../Eventloop.h"
 #include <cstring>
+#include <iostream>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <cassert>
 
 static constexpr int KInitEventListSize = 16;
 
@@ -59,21 +61,77 @@ void EpollPoller::fillActiveChannels(int numEvents, ChannelList* activeChanels) 
 
 void EpollPoller::updateChannel(Channel* channel)  
 {
-    if(channel->IsNoneEvent())
+    Poller::assertInLoopThread();
+    Channel::ChannelInPollerStatus inPollerStatus = channel->getInPollerStatus();
+    int fd = channel->GetSocketFd();
+    std::cout << "fd = " <<fd
+        << " events = " << channel->GetAllEvents() << " index = " << inPollerStatus;
+    
+    if(inPollerStatus == Channel::ChannelInPollerStatus_KInit 
+        || inPollerStatus == Channel::ChannelInPollerStatus_KDeleted)
     {
-        //updateOperator2Poller(EPOLL_CTL_DEL, channel);
-    }
-    else
-    {
-        //Todo: how about EPOLL_CTL_MOD?
+        
+        if(inPollerStatus == Channel::ChannelInPollerStatus_KInit)
+        {
+            channels_[fd] = channel;
+        }
+        else if(inPollerStatus == Channel::ChannelInPollerStatus_KDeleted)
+        {
+            //is existing channels in channels_
+            assert(channels_.find(fd)!=channels_.end());
+            assert(channels_[fd]==channel);
+        }
+
+        //update one with EPOLL_CTL_ADD
+        channel->setInPollerStatus(Channel::ChannelInPollerStatus_KAdded);
         updateOperator2Poller(EPOLL_CTL_ADD, channel);
+        
+    }
+    else if(inPollerStatus == Channel::ChannelInPollerStatus_KAdded)
+    {
+        //update existing one with EPOLL_CTL_MOD/DEL
+        assert(channels_.find(fd)!=channels_.end());
+        assert(channels_[fd]==channel);
+        if(channel->IsNoneEvent())
+        {
+            updateOperator2Poller(EPOLL_CTL_DEL, channel);
+            channel->setInPollerStatus(Channel::ChannelInPollerStatus_KDeleted);
+        }
+        else
+        {
+            updateOperator2Poller(EPOLL_CTL_MOD, channel);
+        }
     }
     
-
 }
 void EpollPoller::RemoveChannel(Channel*channel)  
-{
-    updateOperator2Poller(EPOLL_CTL_DEL, channel);
+{   
+    //when this will be called ? 
+    //when: channel_->remove() -> EventLoop::removeChannel ->this
+    //remove the channel's event in the event loop
+
+    Poller::assertInLoopThread();
+    int fd = channel->GetSocketFd();
+    std::cout << "RemoveChannel fd " <<fd << "from epoller" <<std::endl;
+
+    //is must existing in the channels_
+    assert(channels_.find(fd) != channels_.end());
+    assert(channels_[fd] == channel);
+    assert(channel->IsNoneEvent());
+
+    Channel::ChannelInPollerStatus inPollerStatus = channel->getInPollerStatus();
+    assert(inPollerStatus == Channel::ChannelInPollerStatus_KAdded
+        || inPollerStatus == Channel::ChannelInPollerStatus_KDeleted);
+    
+    channels_.erase(fd);
+
+    if(inPollerStatus == Channel::ChannelInPollerStatus_KAdded)
+    {
+        //unregister from the poller
+        updateOperator2Poller(EPOLL_CTL_DEL, channel);
+    }
+
+    channel->setInPollerStatus(Channel::ChannelInPollerStatus_KInit);
 }
 
 void EpollPoller::updateOperator2Poller(int operation, Channel*channel)
@@ -85,10 +143,29 @@ void EpollPoller::updateOperator2Poller(int operation, Channel*channel)
     event.events=channel->GetAllEvents();//感兴趣的事件。
 
     int fd=channel->GetSocketFd();
+    std::cout << "epoll_ctl op = " << operationToString(operation)
+        << " fd = " << fd << " event = { " << channel->eventsToString() << " }" << std::endl;
+
     int ret=epoll_ctl(epollfd_, operation, fd, &event);
     if(ret<0)
     {
-
+        std::cout <<"EpollPoller::updateOperator2Poller epoll_ctl failed!" << std::endl;
     }
+}
+
+const char* EpollPoller::operationToString(int op)
+{
+  switch (op)
+  {
+    case EPOLL_CTL_ADD:
+      return "ADD";
+    case EPOLL_CTL_DEL:
+      return "DEL";
+    case EPOLL_CTL_MOD:
+      return "MOD";
+    default:
+      assert(false && "ERROR op");
+      return "Unknown Operation";
+  }
 }
 

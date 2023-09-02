@@ -54,7 +54,7 @@ int main()
     EventLoop eventLoop;
     InetAddress listenAddr(1234);
     TcpServer tcpServer(&eventLoop, listenAddr);
-    tcpServer.setThreadNum(4);
+    tcpServer.setThreadNum(0);
     tcpServer.start();
     
     //test timerqueue.

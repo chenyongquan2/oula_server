@@ -10,6 +10,12 @@ class EventLoop;
 class Channel
 {
 public:
+    enum ChannelInPollerStatus 
+    {
+        ChannelInPollerStatus_KInit = 0,
+        ChannelInPollerStatus_KAdded,
+        ChannelInPollerStatus_KDeleted,
+    };
     typedef std::function<void()> EventCallback;
 public:
     Channel(EventLoop* pEventLoop, int fd);
@@ -31,6 +37,12 @@ public:
     {
         closeCallback_ = cb;
     }
+
+    //for poller
+    ChannelInPollerStatus getInPollerStatus() const 
+        {return inPollerStatus_;}
+    void setInPollerStatus(ChannelInPollerStatus inPollerStatus)
+        {inPollerStatus_ = inPollerStatus;}
 
     int GetAllEvents();
     
@@ -65,6 +77,7 @@ private:
     int sockFd_;
     int rEvents_;
     int events_;
+    ChannelInPollerStatus inPollerStatus_;
 
     EventCallback readCallback_;
     EventCallback writeCallback_;

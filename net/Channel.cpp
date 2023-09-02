@@ -21,6 +21,7 @@ Channel::Channel(EventLoop* pEventLoop, int fd)
     , m_socketFd(fd)
     , events_(KNoneEvent)
     , eventHandling_(false)
+    , inPollerStatus_(ChannelInPollerStatus_KInit)
 {
 
 }
