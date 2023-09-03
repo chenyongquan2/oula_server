@@ -49,6 +49,10 @@ public:
     void ConnectDestoryed();
 
 
+    //optional function
+    void setTcpNoDelay(bool on);
+    void setKeepAlive(bool on);
+
 private:
     //chanel会根据事件类型，执行TcpConnection层对应类型handle函数
     void handleRead();

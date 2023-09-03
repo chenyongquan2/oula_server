@@ -30,6 +30,8 @@ TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd, std::string& nam
     channel_->SetReadCallback(std::bind(&TcpConnection::handleRead, this));
     channel_->SetWirteCallback(std::bind(&TcpConnection::handleWirte, this));
     channel_->SetCloseCallback(std::bind(&TcpConnection::handleClose,this));
+
+    socket_->setTcpNoDelay(true);
 }
 
 TcpConnection::~TcpConnection()
@@ -170,4 +172,14 @@ void TcpConnection::send(const void* data, size_t len)
     }
    
     
+}
+
+void TcpConnection::setTcpNoDelay(bool on)
+{
+    socket_->setTcpNoDelay(on);
+}
+
+void TcpConnection::setKeepAlive(bool on)
+{
+    socket_->setKeepAlive(on);
 }

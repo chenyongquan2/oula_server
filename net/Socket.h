@@ -19,6 +19,10 @@ public:
     //only if the listen socket can call this function
     int accept();
 
+    //enable/diable TCP_NODELAY(Nagle's algorithm)
+    void setTcpNoDelay(bool on);
+    //enable/diable SO_KEEPALIVE
+    void setKeepAlive(bool on);
 
 private:
     int sockfd_;
