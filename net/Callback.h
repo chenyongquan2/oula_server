@@ -2,6 +2,7 @@
 #define NET_CALLBACK_H
 
 
+#include <cstddef>
 #include <functional>
 #include <memory>
 
@@ -19,11 +20,18 @@ typedef std::function<void(const TcpConnectionPtr&, Buffer*)> MessageCallback;
 //把数据都从发送缓冲区发送到网络协议栈的回调
 typedef std::function<void(const TcpConnectionPtr&)> WriteCompleteCallback;
 
+//当要发送的数据达到了一个高水平后，执行此回调
+typedef std::function<void(const TcpConnectionPtr&, size_t)> HighWaterMarkCallback;
+
 //close的回调
 typedef std::function<void(const TcpConnectionPtr&)> CloseCallback;
 
-
+//default callbacl
 void defaultMessageCallback(const TcpConnectionPtr&, Buffer*);
+
+void defaultWriteCompleteCallback(const TcpConnectionPtr&);
+
+void defaultHighWaterMarkCallback(const TcpConnectionPtr&, size_t);
 
 //timer的回调
 typedef std::function<void()> TimerCallback;

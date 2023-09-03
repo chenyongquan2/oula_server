@@ -87,6 +87,11 @@ void TcpConnection::handleWirte()
             {
                 //finish to send all the remain data, disbale writing events.
                 channel_->DisableWriteEvent();
+
+                if(writeCompleteCallback_)
+                {
+                    eventloop_->queueInLoop(std::bind(writeCompleteCallback_, shared_from_this()));
+                }
             }
         }
         else
@@ -162,6 +167,22 @@ void TcpConnection::send(const void* data, size_t len)
     assert(remaining <= len);
     if(!errorOccurs && remaining > 0)
     {   
+        //if()
+        {
+            //判断用户发送缓冲区是否超过了指定的大小，只在上升沿的时候触发一次(第一次超过水位)
+            //说明可能用户clinet侧已经接受不过来了。
+            size_t oldLen = outputBuffer_.readableBytes();
+            if(oldLen+remaining >= highWaterMark_
+                && oldLen<highWaterMark_)
+            {
+                if(highWaterMarkCallback_)
+                eventloop_->queueInLoop(std::bind(
+                    highWaterMarkCallback_,shared_from_this(), oldLen + remaining
+                ));
+            }
+        }
+        
+
         //std::cout << "TcpConnection::send it still has more " <<remaining << " data to send!" << std::endl;    
         outputBuffer_.append(static_cast<const char*>(data)+nWrote, remaining);
         if(!channel_->IsEnableWriteEvent())

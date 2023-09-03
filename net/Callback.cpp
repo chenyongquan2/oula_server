@@ -30,3 +30,14 @@ void defaultMessageCallback(const TcpConnectionPtr& conn, Buffer* buffer)
     }
     std::cout << "tid:" << tidStr << "finish to send all str:" << std::endl;
 }
+
+void defaultWriteCompleteCallback(const TcpConnectionPtr& conn)
+{
+    std::cout << "conn:" <<  conn->name()<< "call defaultWriteCompleteCallback" << std::endl;
+}
+
+void defaultHighWaterMarkCallback(const TcpConnectionPtr&conn, size_t hithWaterMark)
+{
+    std::cout << "conn:" <<  conn->name()
+    << "call defaultHighWaterMarkCallback, and the hithWaterMark" << hithWaterMark << std::endl;
+}

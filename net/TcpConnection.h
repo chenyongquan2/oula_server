@@ -40,6 +40,12 @@ public:
     void setWriteCompleteCallback(const WriteCompleteCallback&cb)
         {writeCompleteCallback_ = cb;}
 
+    void setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t highWaterMark)
+    {
+        highWaterMarkCallback_ = cb;
+        highWaterMark_ = highWaterMark;
+    }
+
     void setCloseCallback(const CloseCallback& cb)//notice arg cb must be a right value.
         {closeCallback_ = cb;}
     
@@ -70,11 +76,16 @@ private:
     //NewConnectionCallback connectionCallback_;
     MessageCallback messageCallback_;
 
-    //
+    //when all the data sended
     WriteCompleteCallback writeCompleteCallback_;
+
+    //when the write data more then highWaterMark_, it will be called
+    HighWaterMarkCallback highWaterMarkCallback_;
+    size_t highWaterMark_;
 
     //when the conn closed, it will call this func, to remove the conn in the Tcpserver's conn map
     CloseCallback closeCallback_;
+
 
 
     //buffer

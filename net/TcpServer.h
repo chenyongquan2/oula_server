@@ -7,6 +7,7 @@
 #include "EventLoopThreadPool.h"
 #include "utils/InetAddress.h"
 #include <functional>
+#include <cstddef>
 #include <memory>
 #include <map>
 #include <string>
@@ -33,6 +34,12 @@ public:
     void setWriteCompleteCallback(const WriteCompleteCallback& cb)
         {writeCompleteCallback_ = cb;}
 
+    void setHighWaterMarkCallback(const HighWaterMarkCallback& cb, size_t highWaterMark)
+    {
+        highWaterMarkCallback_ = cb;
+        highWaterMark_ = highWaterMark;
+    }
+
     
     //one loop one thread
     std::shared_ptr<EventLoopThreadPool> threadPool()
@@ -58,6 +65,8 @@ private:
     //user set callback
     MessageCallback messageCallback_;
     WriteCompleteCallback writeCompleteCallback_;
+    HighWaterMarkCallback highWaterMarkCallback_;
+    size_t highWaterMark_;
     ThreadInitCallback threadInitCallback_;
 };
 

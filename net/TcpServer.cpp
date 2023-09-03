@@ -25,6 +25,11 @@ TcpServer::TcpServer(EventLoop* eventloop, const InetAddress& listenAddr)
     acceptor_->setNewConnectionCallback(
         std::bind(&TcpServer::newConnection, this, std::placeholders::_1)
     );
+
+    //default callback, optional
+    writeCompleteCallback_ =  defaultWriteCompleteCallback;
+    highWaterMarkCallback_ = defaultHighWaterMarkCallback;
+    highWaterMark_ = (64*1024);//1024
 }
 
 TcpServer::~TcpServer()
@@ -72,6 +77,8 @@ void TcpServer::newConnection(int sockfd)
     connections_[name] = conn;
     conn->setMessageCallback(messageCallback_);
     conn->setWriteCompleteCallback(writeCompleteCallback_);
+
+    conn->setHighWaterMarkCallback(highWaterMarkCallback_, highWaterMark_);
 
     //notice:std::bind 创建的临时函数对象,是一个右值,
     //所以setCloseCallback的参数得是右值，void setCloseCallback(const CloseCallback& cb)
