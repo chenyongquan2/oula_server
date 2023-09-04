@@ -37,6 +37,7 @@ public:
     //make sure the cb will call in whe loop thread, it will run after polling
     void queueInLoop(Functor cb);
     void assertInLoopThread();
+    bool isInLoopThread() const;
 
     //管理channel相关
     void updateChannel(Channel *);
@@ -57,9 +58,6 @@ public:
         {return loopIdx_ !=0;}
 
 private:
-    bool isInLoopThread() const;
-
-
     void handleWakeupChannelRaad();
     void handlePendingFunctors();//deal with the pennding tasks.
 

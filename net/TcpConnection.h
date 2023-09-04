@@ -22,6 +22,14 @@ void defaultConnectionCallback(const TcpConnectionPtr& conn);
 
 class TcpConnection :public std::enable_shared_from_this<TcpConnection>
 {
+private:
+     enum StateE 
+    {
+        KConnecting = 0,//正在建立连接中
+        KConnected,//已经建立完成连接
+        KDisconnecting,//正在关闭连接
+        KDisconnected,//已经关闭连接
+    };
 public:
     TcpConnection(EventLoop * eventloop, int sockfd, std::string& name, const InetAddress& localAddr, const InetAddress& peerAddr);
     ~TcpConnection();
@@ -29,6 +37,15 @@ public:
     EventLoop* getLoop() const { return eventloop_; }
     const std::string& name() const 
         {return name_;}
+
+    bool isConnected() 
+    {
+        return state_ == KConnected;
+    }
+    bool isDisconnected()
+    {
+        return state_ == KDisconnected;
+    }
 
     void send(const std::string &message);
     void send(const void* data, size_t len);
@@ -54,6 +71,10 @@ public:
     //it will called when the conn destoryed
     void ConnectDestoryed();
 
+    //some close methods
+    void shutdown();
+    void forceClose();
+    void forceCloseWithDelay(double seconds);
 
     //optional function
     void setTcpNoDelay(bool on);
@@ -65,7 +86,16 @@ private:
     void handleWirte();
     void handleClose();
 
+    void sendInLoop(const std::string &message);
+    void sendInLoop(const void* data, size_t len);
 
+    const char* stateToString() const;
+    void setState(StateE s) { state_ = s; }
+
+    //关闭写端。
+    void shutdownInLoop();
+    //force close really
+    void forceCloseInLoop();
 
 private:
     EventLoop* eventloop_;
@@ -96,6 +126,9 @@ private:
     std::string name_;
     const InetAddress localAddr_;
     const InetAddress peerAddr_;
+
+    //conn state.
+    StateE state_;//Todo:should be atomic.
  
 };
 

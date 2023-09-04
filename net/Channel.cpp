@@ -110,6 +110,7 @@ void Channel::HandleEvent()
         //当与文件描述符关联的连接发生错误或异常情况时，也可能触发 POLLHUP 事件
         //需要注意的是，POLLHUP 事件可能与其他事件同时发生。因此，在处理事件时，通常需要综合考虑其他事件标志，例如 POLLIN（可读事件）或 POLLOUT（可写事件）。
         //具体的触发条件和处理方式可能会因操作系统、编程语言或应用场景而有所不同。
+        std::cout << "fd = " << sockFd_ << " Channel::handle_event() POLLHUP" << std::endl;
         if(closeCallback_)
         {
             closeCallback_();

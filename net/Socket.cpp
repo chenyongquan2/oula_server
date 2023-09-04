@@ -2,6 +2,7 @@
 #include "SocketHelper.h"  
 #include "utils/InetAddress.h"
 #include <asm-generic/socket.h>
+#include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -52,4 +53,12 @@ void Socket::setKeepAlive(bool on)
 {
     int optVal = on ? 1 : 0;
     ::setsockopt(sockfd_, SOL_SOCKET, SO_KEEPALIVE, &optVal, static_cast<socklen_t>(sizeof(optVal)));
+}
+
+void Socket::shutdownWrite()
+{
+    if(::shutdown(sockfd_, SHUT_WR) < 0)
+    {
+        std::cout << "sockets::shutdownWrite" << std::endl;
+    }
 }

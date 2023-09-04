@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <sys/types.h>
 #include <unistd.h>
@@ -26,6 +27,7 @@ TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd, std::string& nam
     ,name_(name)
     ,localAddr_(localAddr)
     ,peerAddr_(peerAddr)
+    ,state_(KConnecting)//init state.
 {
     channel_->SetReadCallback(std::bind(&TcpConnection::handleRead, this));
     channel_->SetWirteCallback(std::bind(&TcpConnection::handleWirte, this));
@@ -36,13 +38,37 @@ TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd, std::string& nam
 
 TcpConnection::~TcpConnection()
 {
+    std::cout << "TcpConnection::dtor[" <<  name_ << "] at " << this
+            << " fd=" << channel_->GetSocketFd()
+            << " state=" << stateToString();
+  assert(state_ == KDisconnected);
+}
 
+const char* TcpConnection::stateToString() const
+{
+  switch (state_)
+  {
+    case KDisconnected:
+      return "kDisconnected";
+    case KConnecting:
+      return "kConnecting";
+    case KConnected:
+      return "kConnected";
+    case KDisconnecting:
+      return "kDisconnecting";
+    default:
+      return "unknown state";
+  }
 }
 
 void TcpConnection::ConnectEstablished()
 {
     //强调此函数只能在eventloop_所绑定的线程中被调用
     eventloop_->assertInLoopThread();
+
+    assert(state_ == KConnecting);
+    setState(KConnected);
+    
     channel_->EnableReadEvent();
     std::cout << "ConnectEstablished, and EnableReadEvent" << std::endl;
 }
@@ -50,8 +76,18 @@ void TcpConnection::ConnectEstablished()
 void TcpConnection::ConnectDestoryed()
 {
     eventloop_->assertInLoopThread();
-    channel_->DisableAllEvent();
-    channel_->remove();//Todo: what's the diff between remove and DisableAllEvent?
+    if(state_ == KConnected)
+    {
+        setState(KDisconnected);
+        //当前还在KConnected连接状态，得从channels_列表里移除出去。
+        //DisableAllEvent()主要是把事件给poller给EPOLL_CTL_DEL，但是还在channels_列表里。
+        channel_->DisableAllEvent();
+    }
+    // what's the diff between remove and DisableAllEvent?
+    // DisableAllEvent()主要是把事件给poller给EPOLL_CTL_DEL，但是还在channels_列表里。
+    // remove则会把chanel从poller的channels_列表里面移除出去。
+
+    channel_->remove();
 }
 
 void TcpConnection::handleRead()
@@ -92,6 +128,11 @@ void TcpConnection::handleWirte()
                 {
                     eventloop_->queueInLoop(std::bind(writeCompleteCallback_, shared_from_this()));
                 }
+
+                if(state_ == KDisconnecting)
+                {
+                    shutdownInLoop();
+                }
             }
         }
         else
@@ -109,10 +150,18 @@ void TcpConnection::handleWirte()
 
 void TcpConnection::handleClose()
 {
+    eventloop_->assertInLoopThread();
+    std::cout << "fd = " << channel_->GetSocketFd() << " state = " << stateToString() << std::endl;
+    assert(state_ == KConnected || state_ == KDisconnecting);
+    // we don't close fd, leave it to dtor, so we can find leaks easily.
+    setState(KDisconnected);
+
+
+
     //unregister from poller
     channel_->DisableAllEvent();
     //Todo:this will unregister from poller,how to fix ti.
-    channel_->remove();
+    //channel_->remove();
 
     //call TcpServer::removeConnection to remove the conn from the map.
     closeCallback_(shared_from_this());
@@ -121,13 +170,50 @@ void TcpConnection::handleClose()
 
 void TcpConnection::send(const std::string &message)
 {
-    int len = message.length();
+    size_t len = message.length();
     return send(message.data(), len);
 
 }
 
 void TcpConnection::send(const void* data, size_t len)
 {
+    if(state_ == KConnected)
+    {
+        if(eventloop_->isInLoopThread())
+        {
+            sendInLoop(data, len);
+        }
+        else
+        {
+            //Todo:为啥写法2会编译报错，而写法1不会呢？
+            //写法1
+            void (TcpConnection::*fp)(const void* data, size_t len) = &TcpConnection::sendInLoop;
+            eventloop_->runInLoop(
+                std::bind(fp, this, data, len)
+            );
+            //写法2
+            // eventloop_->runInLoop(
+            //     std::bind(&TcpConnection::sendInLoop, this, data, len);
+            // );
+        }
+    }
+}
+
+void TcpConnection::sendInLoop(const std::string &message)
+{
+    size_t len = message.length();
+    sendInLoop(message.data(), len);
+}
+
+void TcpConnection::sendInLoop(const void* data, size_t len)
+{
+    eventloop_->assertInLoopThread();
+    if(state_== KDisconnected)
+    {
+        std::cout << "disconnected, give up writing" << std::endl;
+        return;
+    }
+
     //size_t nWrote = 0;
     ssize_t nWrote = 0;//it must be signed, bcz nWrote can be -1 when ::write() return
     size_t remaining = len;
@@ -191,8 +277,6 @@ void TcpConnection::send(const void* data, size_t len)
             channel_->EnableWriteEvent();
         }
     }
-   
-    
 }
 
 void TcpConnection::setTcpNoDelay(bool on)
@@ -203,4 +287,53 @@ void TcpConnection::setTcpNoDelay(bool on)
 void TcpConnection::setKeepAlive(bool on)
 {
     socket_->setKeepAlive(on);
+}
+
+void TcpConnection::shutdown()
+{
+    if(state_ == KConnected)
+    {
+        setState(KDisconnecting);
+        eventloop_->runInLoop(std::bind(&TcpConnection::shutdownInLoop, this));
+    }
+}
+
+void TcpConnection::shutdownInLoop()
+{
+    eventloop_->assertInLoopThread();
+    if(!channel_->IsEnableWriteEvent())
+    {
+        socket_->shutdownWrite();
+    }
+}
+
+void TcpConnection::forceClose()
+{
+    if(state_ == KConnected || state_ == KDisconnecting)
+    {
+        setState(KDisconnecting);
+        eventloop_->queueInLoop(std::bind(
+            &TcpConnection::forceCloseInLoop, shared_from_this()
+        ));
+    }
+}
+
+void TcpConnection::forceCloseWithDelay(double seconds)
+{
+    if(state_ == KConnected || state_ == KDisconnecting)
+    {
+        setState(KDisconnecting);
+        eventloop_->runAfter(seconds, std::bind(
+            &TcpConnection::forceCloseInLoop, shared_from_this()
+        ));
+    }
+}
+
+void TcpConnection::forceCloseInLoop()
+{
+    eventloop_->assertInLoopThread();
+    if(state_ == KConnected || state_ == KDisconnecting)
+    {
+        handleClose();
+    }
 }

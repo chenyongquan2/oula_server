@@ -24,6 +24,9 @@ public:
     //enable/diable SO_KEEPALIVE
     void setKeepAlive(bool on);
 
+    //关闭写端。
+    void shutdownWrite();
+
 private:
     int sockfd_;
 };

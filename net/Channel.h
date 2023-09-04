@@ -46,6 +46,7 @@ public:
 
     int GetAllEvents();
     
+    // DisableAllEvent()主要是把事件给poller给EPOLL_CTL_DEL，但是还在channels_列表里。
     void DisableAllEvent();
     bool IsNoneEvent();
 
@@ -60,6 +61,7 @@ public:
     void SetReceiveEvent(int revt);
 
     //remove the channel's event in the event loop
+    //remove则会把chanel从poller的channels_列表里面移除出去。
     void remove();
 
      // for debug
