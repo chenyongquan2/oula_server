@@ -1,4 +1,6 @@
+#include <memory>
 #include <netinet/in.h>
+#include <spdlog/logger.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <iostream>
@@ -6,8 +8,7 @@
 #include "net/TcpServer.h"
 #include "net/utils/InetAddress.h"
 #include "threadpool/threadpool.h"
-
-using namespace std;
+#include "net/utils/log.h"
 
 
 void printHello(int num) {  
@@ -50,6 +51,7 @@ int main()
     //懒汉式启动线程池
     //ThreadPool::GetInstance();
     //testThreadpool();
+    Logger::GetInstance()->debug("start!");
     
     EventLoop eventLoop;
     InetAddress listenAddr(1234);

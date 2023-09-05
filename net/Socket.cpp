@@ -8,6 +8,7 @@
 
 #include <unistd.h>
 #include <netinet/tcp.h>
+#include "utils/log.h"
 
 
 Socket::Socket(int sockfd)
@@ -59,6 +60,6 @@ void Socket::shutdownWrite()
 {
     if(::shutdown(sockfd_, SHUT_WR) < 0)
     {
-        std::cout << "sockets::shutdownWrite" << std::endl;
+        Logger::GetInstance()->debug( "sockets::shutdownWrite");
     }
 }

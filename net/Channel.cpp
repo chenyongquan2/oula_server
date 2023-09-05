@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "Eventloop.h"
+#include "utils/log.h"
 
 //POLLPRT它表示有一个或多个高优先级的带外（out-of-band）数据可供读取
 // 在网络编程中，常常使用POLLPRI来检测带外数据的到达。带外数据是指在TCP连接中的紧急数据，它具有高优先级，需要被立即处理。通过使用POLLPRI标志位，可以确保程序能够及时响应带外数据的到达。
@@ -101,7 +102,8 @@ void Channel::SetReceiveEvent(int revt)
 void Channel::HandleEvent()
 {
     eventHandling_ = true;
-    std::cout << reventsToString() << std::endl;
+    Logger::GetInstance()->debug(reventsToString());
+
     if((rEvents_ & POLLHUP) && !(rEvents_ & POLLIN))
     {
         //POLLHUP 的全称是 "Poll Hang Up"，它是基于 poll 函数的一个事件标志。
@@ -110,7 +112,7 @@ void Channel::HandleEvent()
         //当与文件描述符关联的连接发生错误或异常情况时，也可能触发 POLLHUP 事件
         //需要注意的是，POLLHUP 事件可能与其他事件同时发生。因此，在处理事件时，通常需要综合考虑其他事件标志，例如 POLLIN（可读事件）或 POLLOUT（可写事件）。
         //具体的触发条件和处理方式可能会因操作系统、编程语言或应用场景而有所不同。
-        std::cout << "fd = " << sockFd_ << " Channel::handle_event() POLLHUP" << std::endl;
+        Logger::GetInstance()->debug("fd = {} Channel::handle_event() POLLHUP", sockFd_);
         if(closeCallback_)
         {
             closeCallback_();

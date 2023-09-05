@@ -23,12 +23,31 @@ target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})
 # 打印SOURCE_FILES
 message("SOURCE_FILES: ${SOURCE_FILES}")
 
+# 下载并构建spdlog库  
+include(ExternalProject)  
+ExternalProject_Add(spdlog  
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/spdlog  
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git  
+    GIT_TAG master  
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/spdlog  
+)  
+  
+# 添加spdlog库的头文件搜索路径  
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/spdlog/include)  
+  
+# 添加spdlog库的链接路径  
+link_directories(${CMAKE_CURRENT_BINARY_DIR}/spdlog/lib)  
+
 #input your vcpkg path
 set(CMAKE_PREFIX_PATH "/home/cyq/vcpkg/packages")
 
 find_package(cryptopp CONFIG REQUIRED)
 find_package(CURL REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+
+#本来想用vcpkg来安装使用spdlog的，但是不知道为啥最新的包只有v.12.0远远落后于最新的包。
+#find_package(spdlog CONFIG REQUIRED)
+# spdlog::spdlog
 
 target_link_libraries(${PROJECT_NAME} pthread CURL::libcurl cryptopp::cryptopp fmt::fmt)
 

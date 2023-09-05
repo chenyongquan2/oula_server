@@ -7,6 +7,7 @@
 #include "TcpConnection.h"
 #include "utils/CurrentThread.h"
 #include "Eventloop.h"
+#include "utils/log.h"
 
 void TestSigPipe()
 {
@@ -19,8 +20,7 @@ void defaultMessageCallback(const TcpConnectionPtr& conn, Buffer* buffer)
 
     auto tid = conn->getLoop()->GetThreadId();
     std::string tidStr = CurrentThread::ConvertThreadId2Str(tid);
-    //std::cout << "tid:" << tidStr << ",msg:" << str << std::endl;
-    std::cout << "tid:" << tidStr << ",msg:" << std::endl;
+    Logger::GetInstance()->debug("tid:{},msg!", tidStr);
     //TestSigPipe();
 
     //echo to peer
@@ -28,16 +28,15 @@ void defaultMessageCallback(const TcpConnectionPtr& conn, Buffer* buffer)
     {
         conn->send(str);
     }
-    std::cout << "tid:" << tidStr << "finish to send all str:" << std::endl;
+    Logger::GetInstance()->debug("tid:{} finish to send all str", tidStr);
 }
 
 void defaultWriteCompleteCallback(const TcpConnectionPtr& conn)
 {
-    std::cout << "conn:" <<  conn->name()<< "call defaultWriteCompleteCallback" << std::endl;
+    Logger::GetInstance()->debug("conn:{} call defaultWriteCompleteCallback", conn->name());
 }
 
 void defaultHighWaterMarkCallback(const TcpConnectionPtr&conn, size_t hithWaterMark)
 {
-    std::cout << "conn:" <<  conn->name()
-    << "call defaultHighWaterMarkCallback, and the hithWaterMark" << hithWaterMark << std::endl;
+     Logger::GetInstance()->debug("conn:{} call defaultHighWaterMarkCallback, and the hithWaterMark", conn->name());
 }

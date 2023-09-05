@@ -12,6 +12,7 @@
 #include "iostream"
 #include "Callback.h"
 #include "utils/InetAddress.h"
+#include "utils/log.h"
 
 TcpServer::TcpServer(EventLoop* eventloop, const InetAddress& listenAddr)
     :eventloop_(eventloop)
@@ -67,11 +68,8 @@ void TcpServer::newConnection(int sockfd)
     std::string name = std::to_string(nextConnId_);
 
     //这里会由accrptor给回调到此。
-    std::cout << "TcpServer::newConnection sockfd:" << sockfd << 
-        "connId:" << nextConnId_  
-        << ",localAddr ip:" << localAddr.toIp() << ",port:" << localAddr.port()
-        << ",peerAddr ip:" << peerAddr.toIp() << ",port:" << peerAddr.port()
-        << std::endl;
+    Logger::GetInstance()->debug("TcpServer::newConnection sockfd: {}, connId:{},localAddr ip:{},port:{},peerAddr ip:{},port:{}" , 
+        sockfd, nextConnId_ ,localAddr.toIp(), localAddr.port(), peerAddr.toIp(), peerAddr.port());
     
     TcpConnectionPtr conn = std::make_shared<TcpConnection>(ioLoop, sockfd, name, localAddr, peerAddr);
     connections_[name] = conn;

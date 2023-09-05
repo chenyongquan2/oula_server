@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <string.h>
+#include "net/utils/log.h"
 
 using namespace std;
 
@@ -15,9 +16,9 @@ using namespace std;
 int startClient()
 {
     int clientFd=socket(AF_INET, SOCK_STREAM, 0);
-     if (clientFd == -1)
+    if (clientFd == -1)
     {
-        std::cout << "create client socket error." << std::endl;
+        Logger::GetInstance()->error( "create client socket error.");
         return -1;
     }
 
@@ -30,7 +31,7 @@ int startClient()
     ret=connect(clientFd, (sockaddr*)&serveraddr, sizeof(serveraddr));
     if(ret==-1)
     {
-        std::cout << "connect socket error." << std::endl;
+        Logger::GetInstance()->error("connect socket error.");
         return -1;
     }
 

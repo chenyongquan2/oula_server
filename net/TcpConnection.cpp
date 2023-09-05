@@ -13,12 +13,7 @@
 #include <unistd.h>
 #include "Buffer.h"
 #include "TcpServer.h"
-
-
-// void defaultConnectionCallback(const TcpConnectionPtr& conn)
-// {
-//     std::cout << "new conn" << std::endl;
-// }
+#include "utils/log.h"
 
 TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd, std::string& name, const InetAddress& localAddr, const InetAddress& peerAddr)
     :eventloop_(eventloop)
@@ -38,10 +33,8 @@ TcpConnection::TcpConnection(EventLoop * eventloop, int sockfd, std::string& nam
 
 TcpConnection::~TcpConnection()
 {
-    std::cout << "TcpConnection::dtor[" <<  name_ << "] at " << this
-            << " fd=" << channel_->GetSocketFd()
-            << " state=" << stateToString();
-  assert(state_ == KDisconnected);
+    Logger::GetInstance()->debug("TcpConnection::dtor {}, at fd={}, state={}", name_, channel_->GetSocketFd(), stateToString());
+    assert(state_ == KDisconnected);
 }
 
 const char* TcpConnection::stateToString() const
@@ -70,7 +63,7 @@ void TcpConnection::ConnectEstablished()
     setState(KConnected);
     
     channel_->EnableReadEvent();
-    std::cout << "ConnectEstablished, and EnableReadEvent" << std::endl;
+    Logger::GetInstance()->debug("ConnectEstablished, and EnableReadEvent");
 }
 
 void TcpConnection::ConnectDestoryed()
@@ -92,7 +85,7 @@ void TcpConnection::ConnectDestoryed()
 
 void TcpConnection::handleRead()
 {
-    std::cout << "handleRead" << std::endl;
+    Logger::GetInstance()->debug("handleRead");
     //read the data from socket ,save to the buffer space;
     size_t n = inputBuffer_.readFd(channel_->GetSocketFd());
     if(n>0)
@@ -111,7 +104,7 @@ void TcpConnection::handleRead()
 
 void TcpConnection::handleWirte()
 {
-    std::cout << "handleWrite begin" << std::endl;
+    Logger::GetInstance()->debug("handleWrite begin");
     eventloop_->assertInLoopThread();
     if(channel_->IsEnableWriteEvent())
     {
@@ -137,21 +130,20 @@ void TcpConnection::handleWirte()
         }
         else
         {
-            std::cout << "handleWrite to send non data" << std::endl;
+            Logger::GetInstance()->debug("handleWrite to send non data");
         }
     }
     else
     {
         //poller通知可写但是却又write不出去。。。
-        std::cout << "[handleWrite] conn fd:" << channel_->GetSocketFd() 
-            << "is down , no more writing" << std::endl;
+        Logger::GetInstance()->debug("[handleWrite] conn fd:{},is down , no more writing ",channel_->GetSocketFd());
     }
 }
 
 void TcpConnection::handleClose()
 {
     eventloop_->assertInLoopThread();
-    std::cout << "fd = " << channel_->GetSocketFd() << " state = " << stateToString() << std::endl;
+    Logger::GetInstance()->debug("fd = {}, state = {}" , channel_->GetSocketFd(), stateToString());
     assert(state_ == KConnected || state_ == KDisconnecting);
     // we don't close fd, leave it to dtor, so we can find leaks easily.
     setState(KDisconnected);
@@ -210,7 +202,7 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
     eventloop_->assertInLoopThread();
     if(state_== KDisconnected)
     {
-        std::cout << "disconnected, give up writing" << std::endl;
+        Logger::GetInstance()->debug( "disconnected, give up writing");
         return;
     }
 
@@ -244,7 +236,7 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
                     // ECONNRESET（Connection Reset）：发生在套接字连接被对方重置或关闭时。比如，在TCP连接中，如果对方已经关闭了连接，而本地套接字仍然尝试发送数据，则ECONNRESET错误将被设置。
                     // 这两种错误场景下，errno会被设置为对应的错误码，即EPIPE或ECONNRESET。在代码中通过判断errno的值是否等于这两个错误码，可以根据不同的错误情况采取相应的处理措施。
                     errorOccurs = true;
-                    std::cout << "TcpConnection::send fail bcz peer closed!" << std::endl;
+                    Logger::GetInstance()->debug("TcpConnection::send fail bcz peer closed!");
                 }
             }
         }
@@ -267,13 +259,11 @@ void TcpConnection::sendInLoop(const void* data, size_t len)
                 ));
             }
         }
-        
-
-        //std::cout << "TcpConnection::send it still has more " <<remaining << " data to send!" << std::endl;    
+         
         outputBuffer_.append(static_cast<const char*>(data)+nWrote, remaining);
         if(!channel_->IsEnableWriteEvent())
         {
-            std::cout << "TcpConnection::send it still has more " <<remaining << " data to send!" << std::endl;  
+            Logger::GetInstance()->debug("TcpConnection::send it still has more {} data to send!", remaining);
             channel_->EnableWriteEvent();
         }
     }

@@ -33,6 +33,7 @@
 #include <signal.h>
 #include <csignal>
 #include <unistd.h> 
+#include "utils/log.h"
 
 namespace 
 {
@@ -56,15 +57,14 @@ namespace
             sa.sa_flags=0;
             if(sigaction(SIGPIPE, &sa, nullptr) == -1)
             {
-                std::cout << "IgnoreSigPipe sigaction failed" << std::endl; 
+                Logger::GetInstance()->error( "IgnoreSigPipe sigaction failed");
                 exit(-1);
             }
             
         }
     private:
-        static void signalHandler(int signal) {  
-            std::cout << "Received signal: " << signal << std::endl;  
-        
+        static void signalHandler(int signal) {
+            Logger::GetInstance()->debug("Received signal:{} ",signal);
             // 执行其他操作，如关闭文件、释放资源等  
         
             // 退出程序  
@@ -127,7 +127,8 @@ EventLoop::~EventLoop()
 
 void EventLoop::loop()
 {
-    std::cout<<"EventLoop start"<<std::endl;
+    Logger::GetInstance()->debug("EventLoop start");
+
     while(!quit_)
     {
         activeChanels_.clear();
@@ -217,7 +218,7 @@ void EventLoop::WakeupToHandlePendingFunctors()
     ssize_t n = ::write(wakeupFd_, (void *)&one, sizeof(one));
     if(n != sizeof(uint64_t))
     {
-        std::cout << "EventLoop::wakeup() writes " << n << " bytes instead of 8, error occurs!";
+        Logger::GetInstance()->error("EventLoop::wakeup() writes {} bytes instead of 8, error occurs!", n);
         //todo: throw error
     }
 }
@@ -228,12 +229,12 @@ void EventLoop::handleWakeupChannelRaad()
     ssize_t n = ::read(wakeupFd_, (void *)&one, sizeof(one));
     if(n != sizeof(uint64_t))
     {
-        std::cout << "EventLoop::handleWakeupChannelRaad() reads " << n << " bytes instead of 8, error occurs!";
+        Logger::GetInstance()->error("EventLoop::handleWakeupChannelRaad() readss {} bytes instead of 8, error occurs!", n);
         //todo: throw error
     }
     else
     {
-        std::cout << "EventLoop::handleWakeupChannelRaad() sucessed!";
+        Logger::GetInstance()->debug("EventLoop::handleWakeupChannelRaad() sucessed!");
     }
 }
 
