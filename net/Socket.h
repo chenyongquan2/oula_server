@@ -17,7 +17,7 @@ public:
     void listen();
 
     //only if the listen socket can call this function
-    int accept();
+    int accept(InetAddress* peeraddr);
 
     //enable/diable TCP_NODELAY(Nagle's algorithm)
     void setTcpNoDelay(bool on);

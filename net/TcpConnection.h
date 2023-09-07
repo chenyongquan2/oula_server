@@ -38,6 +38,9 @@ public:
     const std::string& name() const 
         {return name_;}
 
+    const InetAddress& localAddress() const { return localAddr_; }
+    const InetAddress& peerAddress() const { return peerAddr_; }
+
     bool isConnected() 
     {
         return state_ == KConnected;
@@ -50,7 +53,10 @@ public:
     void send(const std::string &message);
     void send(const void* data, size_t len);
     
-    //callback
+    //user callback
+    void setConnectionCallback(const ConnectionCallback& cb)
+        {connectionCallback_ = cb;}
+
     void setMessageCallback(const MessageCallback& cb)
         {messageCallback_ = cb;}
 
@@ -103,7 +109,7 @@ private:
     std::unique_ptr<Channel> channel_;
 
     //conn event callback
-    //NewConnectionCallback connectionCallback_;
+    ConnectionCallback connectionCallback_;
     MessageCallback messageCallback_;
 
     //when all the data sended

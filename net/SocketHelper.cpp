@@ -1,4 +1,5 @@
 #include "SocketHelper.h"
+#include <asm-generic/socket.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -137,6 +138,33 @@ const struct sockaddr* sockaddr_cast(const struct sockaddr_in * addr)
 {
     const struct sockaddr* pAddr = static_cast<const struct sockaddr*>((void *)(addr));
     return pAddr;
+}
+
+int getSocketError(int sockfd)
+{
+    int optval;
+    socklen_t optlen = static_cast<socklen_t>(sizeof(optlen));
+    if(::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
+    {
+        return errno;
+    }
+    else
+    {
+        return optval;
+    }
+}
+
+bool isSelfConnect(int sockfd)
+{
+    struct sockaddr_in localAddr = getLocalAddr(sockfd);
+    struct sockaddr_in peerAddr =getPeerAddr(sockfd);
+
+    // 自连接通常是在开发和测试过程中出现的，用于模拟客户端与服务器之间的通信。它可以用于在本地主机上测试网络应用程序的正确性和可靠性，而无需真正与远程服务器进行通信。
+    // 自连接的典型示例是在本地主机上运行一个服务器程序，并使用相同的主机地址和端口号作为客户端程序来连接该服务器。这样，服务器程序实际上会与自己建立连接，模拟出客户端和服务器之间的通信。
+    // 需要注意的是，自连接只在本地主机上有效，因为在网络中，每个主机都有唯一的IP地址。对于不同主机上的进程或应用程序，它们不能通过相同的IP地址和端口号进行自连接，因为它们位于不同的主机上。
+    bool bSamePort = localAddr.sin_port == peerAddr.sin_port;
+    bool bSameAddr = localAddr.sin_addr.s_addr == peerAddr.sin_addr.s_addr;
+    return bSamePort && bSameAddr;
 }
 
 }

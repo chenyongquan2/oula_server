@@ -12,6 +12,11 @@ namespace SocketHelper {
     void setReusePort(int sockfd, bool on);
     int accept(int listenSockfd, struct sockaddr_in* addr);
 
+    int getSocketError(int sockfd);
+
+    //判断是否是自连接。
+    bool isSelfConnect(int sockfd);
+
     //获取套接字（socket）的本地地址和远程地址的函数
     struct sockaddr_in getLocalAddr(int sockfd);
     struct sockaddr_in getPeerAddr(int sockfd);

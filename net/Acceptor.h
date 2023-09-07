@@ -16,7 +16,7 @@ class InetAddress;
 class Acceptor
 {
 public:
-    
+    typedef std::function<void (int sockfd, const InetAddress&)> NewConnectionCallback;
 public:
     Acceptor(EventLoop* eventloop, const InetAddress& listenAddr);
     ~Acceptor();

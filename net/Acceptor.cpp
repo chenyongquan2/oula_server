@@ -48,14 +48,14 @@ void Acceptor::listen()
 void Acceptor::HandleRead()
 {
     //accept the connect
-
-    int connfd = acceptSocket_->accept();
+    InetAddress peerAddr;
+    int connfd = acceptSocket_->accept(&peerAddr);
     if(connfd>=0)
     {
         if(newConnectionCallback_)
         {
             //转调到TcpServer或者TcpClient的::newConnection
-            newConnectionCallback_(connfd);
+            newConnectionCallback_(connfd, peerAddr);
         }
     }
     else

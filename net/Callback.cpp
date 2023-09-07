@@ -8,10 +8,20 @@
 #include "utils/CurrentThread.h"
 #include "Eventloop.h"
 #include "utils/log.h"
+#include "utils/InetAddress.h"
 
 void TestSigPipe()
 {
     sleep(5);
+}
+
+void defaultConnectionCallback(const TcpConnectionPtr& conn)
+{
+    Logger::GetInstance()->debug(
+        "local port:{} connect to {}, is:{}",conn->localAddress().toIpPort(), conn->peerAddress().toIpPort(),(conn->isConnected() ? "UP" : "DOWN" )
+    );
+    
+  // do not call conn->forceClose(), because some users want to register message callback only.
 }
 
 void defaultMessageCallback(const TcpConnectionPtr& conn, Buffer* buffer)

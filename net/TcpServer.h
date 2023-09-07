@@ -28,9 +28,19 @@ public:
     ~TcpServer();
 
     void start();
+
+    /// Set connection callback.
+    /// Not thread safe.
+    void setConnectionCallback(const ConnectionCallback& cb)
+    { connectionCallback_ = cb; }
+
+    /// Set connection callback.
+    /// Not thread safe.
     void setMessageCallback(const MessageCallback& cb)
         {messageCallback_ = cb;}
 
+    /// Set connection callback.
+    /// Not thread safe.
     void setWriteCompleteCallback(const WriteCompleteCallback& cb)
         {writeCompleteCallback_ = cb;}
 
@@ -63,6 +73,7 @@ private:
     std::shared_ptr<EventLoopThreadPool> threadPool_;
 
     //user set callback
+    ConnectionCallback connectionCallback_;
     MessageCallback messageCallback_;
     WriteCompleteCallback writeCompleteCallback_;
     HighWaterMarkCallback highWaterMarkCallback_;

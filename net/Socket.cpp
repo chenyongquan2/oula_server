@@ -37,10 +37,14 @@ void Socket::listen()
     SocketHelper::listenOrDie(sockfd_);
 }
 
-int Socket::accept()
+int Socket::accept(InetAddress* peeraddr)
 {
     struct sockaddr_in addr;
     int connfd =  SocketHelper::accept(sockfd_, &addr);
+    if(connfd>0)
+    {
+        peeraddr->setSockAddr(addr);
+    }
     return connfd;
 }
 

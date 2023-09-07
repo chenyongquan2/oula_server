@@ -18,6 +18,7 @@ TcpServer::TcpServer(EventLoop* eventloop, const InetAddress& listenAddr)
     :eventloop_(eventloop)
     ,acceptor_(new Acceptor(eventloop, listenAddr))
     ,nextConnId_(1)
+    ,connectionCallback_(defaultConnectionCallback)
     ,messageCallback_(defaultMessageCallback)//默认读事件处理函数。
     ,threadPool_(new EventLoopThreadPool(eventloop, "oula"))
 {
@@ -73,6 +74,7 @@ void TcpServer::newConnection(int sockfd)
     
     TcpConnectionPtr conn = std::make_shared<TcpConnection>(ioLoop, sockfd, name, localAddr, peerAddr);
     connections_[name] = conn;
+    conn->setConnectionCallback(connectionCallback_);
     conn->setMessageCallback(messageCallback_);
     conn->setWriteCompleteCallback(writeCompleteCallback_);
 

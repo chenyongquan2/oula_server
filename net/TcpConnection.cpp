@@ -63,6 +63,9 @@ void TcpConnection::ConnectEstablished()
     setState(KConnected);
     
     channel_->EnableReadEvent();
+    //执行用户的建立/关闭连接的回调
+    connectionCallback_(shared_from_this());
+    
     Logger::GetInstance()->debug("ConnectEstablished, and EnableReadEvent");
 }
 
@@ -75,6 +78,9 @@ void TcpConnection::ConnectDestoryed()
         //当前还在KConnected连接状态，得从channels_列表里移除出去。
         //DisableAllEvent()主要是把事件给poller给EPOLL_CTL_DEL，但是还在channels_列表里。
         channel_->DisableAllEvent();
+
+        //执行用户的建立/关闭连接的回调
+        connectionCallback_(shared_from_this());
     }
     // what's the diff between remove and DisableAllEvent?
     // DisableAllEvent()主要是把事件给poller给EPOLL_CTL_DEL，但是还在channels_列表里。
@@ -154,6 +160,8 @@ void TcpConnection::handleClose()
     channel_->DisableAllEvent();
     //Todo:this will unregister from poller,how to fix ti.
     //channel_->remove();
+
+    connectionCallback_(shared_from_this());
 
     //call TcpServer::removeConnection to remove the conn from the map.
     closeCallback_(shared_from_this());

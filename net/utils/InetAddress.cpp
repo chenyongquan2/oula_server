@@ -1,6 +1,7 @@
 #include "InetAddress.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <string>
 #include <sys/socket.h>
 #include "../SocketHelper.h"
 
@@ -16,18 +17,6 @@
 
 static constexpr in_addr_t KInetAny = INADDR_ANY;
 static constexpr in_addr_t KInetLoopback = INADDR_ANY;
-
-std::string InetAddress::toIp() const
-{
-    char buf[64] = "";
-    if(addr_.sin_family == AF_INET)
-    {
-        //p 表示 "presentation"，即表示要转换的 IP 地址的字符串形式。而 n 则表示 "network"，即表示要存储结果的目标内存地址
-        ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
-    }
-    
-    return buf;
-}
 
 InetAddress::InetAddress(uint16_t port)
 {
@@ -47,6 +36,28 @@ uint16_t InetAddress::port() const
 {
     uint16_t port = ::ntohs(addr_.sin_port);
     return port;
+}
+
+std::string InetAddress::toIp() const
+{
+    char buf[64] = "";
+    if(addr_.sin_family == AF_INET)
+    {
+        //p 表示 "presentation"，即表示要转换的 IP 地址的字符串形式。而 n 则表示 "network"，即表示要存储结果的目标内存地址
+        ::inet_ntop(AF_INET, &addr_.sin_addr, buf, sizeof(buf));
+    }
+    
+    return buf;
+}
+
+std::string InetAddress::toIpPort() const
+{
+    //Todo:后面这里可以尝试改造为fmt库来实现。
+    std::string buf;
+    buf.append(toIp());
+    buf.append(":");
+    buf.append(std::to_string(port()));
+    return buf;
 }
 
 const struct sockaddr* InetAddress::getSockAddr() const

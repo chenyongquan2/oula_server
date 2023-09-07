@@ -9,11 +9,12 @@
 class TcpConnection;
 class Buffer;
 
+//这里都是user级别的回调。
 
 typedef std::shared_ptr<TcpConnection> TcpConnectionPtr;
 
 //新连接accept返回后，触发的回调。
-typedef std::function<void(int sockfd)> NewConnectionCallback;
+typedef std::function<void (const TcpConnectionPtr&)> ConnectionCallback;
 //可读的回调
 typedef std::function<void(const TcpConnectionPtr&, Buffer*)> MessageCallback;
 
@@ -27,6 +28,8 @@ typedef std::function<void(const TcpConnectionPtr&, size_t)> HighWaterMarkCallba
 typedef std::function<void(const TcpConnectionPtr&)> CloseCallback;
 
 //default callbacl
+void defaultConnectionCallback(const TcpConnectionPtr&);
+
 void defaultMessageCallback(const TcpConnectionPtr&, Buffer*);
 
 void defaultWriteCompleteCallback(const TcpConnectionPtr&);
