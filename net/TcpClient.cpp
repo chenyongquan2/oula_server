@@ -130,9 +130,6 @@ void TcpClient::newConnection(int sockfd)
 
     //由于client只有一个eventloop，不用太考虑多个eventloop的多线程场景。
     conn->ConnectEstablished();
-
-    
-
     //ioLoop->runInLoop(std::bind(&TcpConnection::ConnectEstablished,conn));
 }
 

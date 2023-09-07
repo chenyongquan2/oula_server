@@ -47,6 +47,29 @@ void TestTimer()
 
 }
 
+void testClientSendAndRecvData(TcpClient& tcpClient)
+{
+    //auto connCb = [](const TcpConnectionPtr& conn) -> void
+    //如果你不替换 auto，那么 connCb 的类型将被推导为一个 lambda 表达式类型。这个类型的具体形式可能会因编译器而异,会不一定满足ConnectionCallback
+    //导致setNewConnectionCallback这一行编译出错。
+    ConnectionCallback connCb = [](const TcpConnectionPtr& conn) -> void
+    {
+        Logger::GetInstance()->debug(
+            "[user connectionCallback]local port:{} connect to {}, is:{}",conn->localAddress().toIpPort(), conn->peerAddress().toIpPort(),(conn->isConnected() ? "UP" : "DOWN" )
+        );
+        //mock send data to server after 3 min
+        auto mockSend = [conn]() 
+        {
+            conn->send("ni hao from client!");
+        };
+
+        conn->getLoop()->runAfter(3, std::bind(mockSend));
+        
+    };
+
+    tcpClient.setNewConnectionCallback(connCb);
+}
+
 int main(int argc,char* argv[])
 {
     Logger::GetInstance()->debug("argc:{}", argc);
@@ -75,6 +98,9 @@ int main(int argc,char* argv[])
         EventLoop eventLoop;
         InetAddress listenAddr(1234);
         TcpClient tcpClient(&eventLoop, listenAddr, "oula_client");
+
+        testClientSendAndRecvData(tcpClient);
+        
         tcpClient.enableRetry();//允许与服务端断开链接后重连
         tcpClient.connect();
         
