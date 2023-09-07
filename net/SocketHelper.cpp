@@ -142,7 +142,7 @@ const struct sockaddr* sockaddr_cast(const struct sockaddr_in * addr)
 
 int getSocketError(int sockfd)
 {
-    int optval;
+    int optval = 0;
     socklen_t optlen = static_cast<socklen_t>(sizeof(optlen));
     if(::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
     {
@@ -150,6 +150,11 @@ int getSocketError(int sockfd)
     }
     else
     {
+        //getSocketError() 函数返回的 optval 值为 111。这个值表示 ECONNREFUSED 错误，即连接被拒绝 。
+        // 这种情况通常发生在客户端尝试连接到服务器时，但服务器拒绝了连接。这可能是由于以下原因之一导致的：
+        // 服务器未运行或已关闭。
+        // 服务器正在运行，但没有监听客户端尝试连接的端口。
+        // 服务器正在运行，但已达到其最大连接数限制。
         return optval;
     }
 }

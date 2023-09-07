@@ -10,8 +10,8 @@ enable_testing()
 #file(GLOB SOURCES "*.cpp" "*.h")
 #add_executable(${PROJECT_NAME} ${SOURCES})
 
-add_executable(${PROJECT_NAME})
 
+add_executable(oula_client client.cc)
 
 # 递归获取所有 .cpp 和 .h 文件  
 file(GLOB_RECURSE SOURCE_FILES  
@@ -20,7 +20,7 @@ file(GLOB_RECURSE SOURCE_FILES
 )
 list(FILTER SOURCE_FILES EXCLUDE REGEX "build/")
 # 将文件添加到可执行文件中  
-target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES}) 
+target_sources(oula_client PRIVATE ${SOURCE_FILES}) 
 
 # 打印SOURCE_FILES
 message("SOURCE_FILES: ${SOURCE_FILES}")
@@ -51,8 +51,8 @@ find_package(fmt CONFIG REQUIRED)
 #find_package(spdlog CONFIG REQUIRED)
 # spdlog::spdlog
 
-target_link_libraries(${PROJECT_NAME} pthread CURL::libcurl cryptopp::cryptopp fmt::fmt)
+target_link_libraries(oula_client pthread CURL::libcurl cryptopp::cryptopp fmt::fmt)
 
-set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_NAME oula_client)
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)

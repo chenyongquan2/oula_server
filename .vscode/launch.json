@@ -7,10 +7,18 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug",
+            "name": "Debug server",
             "program": "${workspaceFolder}/build/oula_server",
             "args": [],
             "cwd": "${workspaceFolder}"
-        }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug client",
+            "program": "${workspaceFolder}/build/oula_server",
+            "args": ["client"],
+            "cwd": "${workspaceFolder}"
+        },
     ]
 }

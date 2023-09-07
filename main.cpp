@@ -9,6 +9,7 @@
 #include "net/utils/InetAddress.h"
 #include "threadpool/threadpool.h"
 #include "net/utils/log.h"
+#include "net/TcpClient.h"
 
 
 void printHello(int num) {  
@@ -46,24 +47,43 @@ void TestTimer()
 
 }
 
-int main()
+int main(int argc,char* argv[])
 {
-    //懒汉式启动线程池
-    //ThreadPool::GetInstance();
-    //testThreadpool();
-    Logger::GetInstance()->debug("start!");
-    
-    EventLoop eventLoop;
-    InetAddress listenAddr(1234);
-    TcpServer tcpServer(&eventLoop, listenAddr);
-    tcpServer.setThreadNum(0);
-    tcpServer.start();
-    
-    //test timerqueue.
-    //eventLoop.runEvery(1, std::bind(&TestTimer));
+    Logger::GetInstance()->debug("argc:{}", argc);
+    if(argc <= 1)
+    {
+        //懒汉式启动线程池
+        //ThreadPool::GetInstance();
+        //testThreadpool();
+        Logger::GetInstance()->debug("server start!");
+        
+        EventLoop eventLoop;
+        InetAddress listenAddr(1234);
+        TcpServer tcpServer(&eventLoop, listenAddr);
+        tcpServer.setThreadNum(0);
+        tcpServer.start();
+        
+        //test timerqueue.
+        //eventLoop.runEvery(1, std::bind(&TestTimer));
 
-    eventLoop.loop();
+        eventLoop.loop();
+    }
+    else
+    {
+        Logger::GetInstance()->debug("client start!");
     
+        EventLoop eventLoop;
+        InetAddress listenAddr(1234);
+        TcpClient tcpClient(&eventLoop, listenAddr, "oula_client");
+        tcpClient.enableRetry();//允许与服务端断开链接后重连
+        tcpClient.connect();
+        
+        //test timerqueue.
+        //eventLoop.runEvery(1, std::bind(&TestTimer));
+
+        eventLoop.loop();
+    }
+
 
     return 0;
 }
