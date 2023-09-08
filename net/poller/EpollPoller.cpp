@@ -13,6 +13,7 @@ EpollPoller::EpollPoller(EventLoop* eventloop)
     :Poller(eventloop)
     ,events_(KInitEventListSize)
 {
+    Logger::GetInstance()->debug("use EpollPoller!");
     // FD_CLOEXEC 标志表示在执行 exec() 系统调用时，该文件描述符将会被关闭，以避免在子进程中意外继承该文件描述符。
     // 通过在 epoll_create1() 中设置 EPOLL_CLOEXEC 标志，可以确保创建的 epoll 实例在执行 exec() 系统调用时会被自动关闭。这在编写多进程或多线程程序时非常有用，可以避免在执行 exec() 时意外继承 epoll 实例的文件描述符。
     epollfd_ = epoll_create1(EPOLL_CLOEXEC);

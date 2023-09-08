@@ -7,18 +7,46 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug server",
+            "name": "Debug server with epoll",
             "program": "${workspaceFolder}/build/oula_server",
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "USE_POLL_TYPE":"Epoll"
+            }
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug client",
+            "name": "Debug client with epoll",
             "program": "${workspaceFolder}/build/oula_server",
             "args": ["client"],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "USE_POLL_TYPE":"Epoll"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug server with poller",
+            "program": "${workspaceFolder}/build/oula_server",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "USE_POLL_TYPE":"Poll"
+            }
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug client with poller",
+            "program": "${workspaceFolder}/build/oula_server",
+            "args": ["client"],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "USE_POLL_TYPE":"Poll"
+            }
         },
     ]
 }
